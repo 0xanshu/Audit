@@ -89,7 +89,7 @@ export default function DashboardPage() {
           <div className="rounded-lg border border-gray-800 bg-[#1A1D24] p-4">
             <h2 className="mb-2 text-2xl font-bold">Welcome back, Jane!</h2>
             <p className="mb-6 text-gray-400">
-              Here's what's happening with your projects today.
+              Here&apos;s what&apos;s happening with your projects today.
             </p>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

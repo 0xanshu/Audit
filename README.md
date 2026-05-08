@@ -1,29 +1,37 @@
-# Create T3 App
+# AuditsPro
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+**Stop Overspending on AI.**
 
-## What's next? How do I make an app with this?
+Welcome to AuditsPro! This platform is designed to help teams and enterprises analyze, optimize, and manage their monthly spend on AI tooling. With the rapid explosion of AI subscriptions—from ChatGPT and Claude to developer tools like Cursor and GitHub Copilot—it's incredibly easy to overpay for unused seats or redundant features.
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+AuditsPro gives you clarity, control, and immediate savings.
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+## What exactly does AuditsPro do?
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+AuditsPro serves as your automated, fractional CFO for AI subscriptions.
 
-## Learn More
+1. **Input Your Stack:** Tell us what tools your team uses, the plan tier, your monthly spend, and your team size.
+2. **Instant Analysis:** Our proprietary Audit Engine checks your reported spend against actual retail pricing and detects feature redundancies.
+3. **Actionable Recommendations:** We generate a straightforward breakdown of your stack with specific actions:
+   - **Keep:** You're on the right plan and paying the correct amount.
+   - **Downgrade:** You are overpaying for unused seats or enterprise features you don't need.
+   - **Switch:** A cheaper, more effective alternative exists for your specific use-case (e.g., swapping OpenAI API for Anthropic API for pure writing tasks).
+4. **Track Savings:** Watch your bottom line improve via a unified, beautifully designed dashboard.
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+## Key Features
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+- **Smart Spend Engine:** Deep, built-in pricing intelligence for the top AI platforms (Cursor, Copilot, Claude, ChatGPT, Anthropic API, OpenAI API, Gemini, Windsurf).
+- **Interactive Dashboard:** A sleek, fully-rounded dark mode interface to track historical audits and monitor your total money saved.
+- **Secure Access:** Lightning-fast, secure authentication powered by GitHub.
+- **Shareable Reports:** Generate anonymized links to share your audit results with management to secure approval for budget changes, without exposing sensitive email or employee data.
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+## Getting Started
 
-## How do I deploy this?
+1. **Sign in:** Use your existing GitHub account to securely log in.
+2. **Launch an Audit:** From your dashboard, click **New Audit**.
+3. **Review:** See exactly where you are leaking money.
+4. **Apply Fixes:** Follow the exact steps to downgrade or switch your plans and immediately realize the savings.
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+---
+
+_Take control of your AI stack._

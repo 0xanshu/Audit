@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { Icons } from "~/components/icons";
 import { Button } from "~/components/ui/button";
 import { signIn } from "~/server/auth";
 
 export default function RegisterPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[#0F1117] p-4 text-white">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md">
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight">
             Create an account
@@ -15,7 +16,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6">
+        <form className="mt-4 space-y-6">
           <div className="space-y-4">
             <div>
               <label
@@ -29,7 +30,7 @@ export default function RegisterPage() {
                 name="name"
                 type="text"
                 required
-                className="focus:border-brand focus:ring-brand mt-1 block w-full rounded-md border border-gray-700 bg-[#1A1D24] px-3 py-2 text-white placeholder-gray-500 transition-colors focus:ring-1 focus:outline-none"
+                className="focus:border-brand focus:ring-brand mt-2 block w-full rounded-md border border-gray-700 bg-[#1A1D24] px-3 py-2 text-white placeholder-gray-500 transition-colors focus:ring-1 focus:outline-none"
                 placeholder="Jane Doe"
               />
             </div>
@@ -45,7 +46,7 @@ export default function RegisterPage() {
                 name="email"
                 type="email"
                 required
-                className="focus:border-brand focus:ring-brand mt-1 block w-full rounded-md border border-gray-700 bg-[#1A1D24] px-3 py-2 text-white placeholder-gray-500 transition-colors focus:ring-1 focus:outline-none"
+                className="focus:border-brand focus:ring-brand mt-2 block w-full rounded-md border border-gray-700 bg-[#1A1D24] px-3 py-2 text-white placeholder-gray-500 transition-colors focus:ring-1 focus:outline-none"
                 placeholder="you@example.com"
               />
             </div>
@@ -61,7 +62,7 @@ export default function RegisterPage() {
                 name="password"
                 type="password"
                 required
-                className="focus:border-brand focus:ring-brand mt-1 block w-full rounded-md border border-gray-700 bg-[#1A1D24] px-3 py-2 text-white placeholder-gray-500 transition-colors focus:ring-1 focus:outline-none"
+                className="focus:border-brand focus:ring-brand mt-2 block w-full rounded-md border border-gray-700 bg-[#1A1D24] px-3 py-2 text-white placeholder-gray-500 transition-colors focus:ring-1 focus:outline-none"
                 placeholder="••••••••"
               />
             </div>
@@ -78,7 +79,7 @@ export default function RegisterPage() {
           </div>
         </form>
 
-        <div className="mt-6">
+        <div className="mt-4">
           <form
             action={async () => {
               "use server";
@@ -87,9 +88,10 @@ export default function RegisterPage() {
           >
             <Button
               variant="pill"
-              className="h-11 w-full text-base"
+              className="flex h-11 w-full items-center justify-center gap-2 text-base"
               type="submit"
             >
+              <Icons.gitHub className="text-brand h-5 w-5" />
               Continue with GitHub
             </Button>
           </form>

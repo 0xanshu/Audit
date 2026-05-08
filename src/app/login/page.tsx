@@ -1,16 +1,19 @@
 import Link from "next/link";
+import { Icons } from "~/components/icons";
 import { Button } from "~/components/ui/button";
 
 export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[#0F1117] p-4 text-white">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md">
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight">Welcome Back</h2>
-          <p className="mt-2 text-sm text-gray-400">Sign in to your account</p>
+          <p className="mt-2 text-sm text-gray-400">
+            Sign in to save your money!
+          </p>
         </div>
 
-        <form className="mt-8 space-y-6">
+        <form className="mt-4 space-y-6">
           <div className="space-y-4">
             <div>
               <label
@@ -24,7 +27,7 @@ export default function LoginPage() {
                 name="email"
                 type="email"
                 required
-                className="focus:border-brand focus:ring-brand mt-1 block w-full rounded-md border border-gray-700 bg-[#1A1D24] px-3 py-2 text-white placeholder-gray-500 transition-colors focus:ring-1 focus:outline-none"
+                className="focus:border-brand focus:ring-brand mt-2 block w-full rounded-md border border-gray-700 bg-[#1A1D24] px-3 py-2 text-white placeholder-gray-500 transition-colors focus:ring-1 focus:outline-none"
                 placeholder="you@example.com"
               />
             </div>
@@ -40,7 +43,7 @@ export default function LoginPage() {
                 name="password"
                 type="password"
                 required
-                className="focus:border-brand focus:ring-brand mt-1 block w-full rounded-md border border-gray-700 bg-[#1A1D24] px-3 py-2 text-white placeholder-gray-500 transition-colors focus:ring-1 focus:outline-none"
+                className="focus:border-brand focus:ring-brand mt-2 block w-full rounded-md border border-gray-700 bg-[#1A1D24] px-3 py-2 text-white placeholder-gray-500 transition-colors focus:ring-1 focus:outline-none"
                 placeholder="••••••••"
               />
             </div>
@@ -63,7 +66,10 @@ export default function LoginPage() {
             </div>
 
             <div className="text-sm">
-              <a href="#" className="text-brand hover:bg-brand/90 font-medium">
+              <a
+                href="#"
+                className="text-brand hover:text-brand/80 font-medium"
+              >
                 Forgot your password?
               </a>
             </div>
@@ -80,7 +86,7 @@ export default function LoginPage() {
           </div>
         </form>
 
-        <div className="mt-6">
+        <div className="mt-4">
           <form
             action={async () => {
               "use server";
@@ -90,9 +96,10 @@ export default function LoginPage() {
           >
             <Button
               variant="pill"
-              className="h-11 w-full text-base"
+              className="flex h-11 w-full items-center justify-center gap-2 text-base"
               type="submit"
             >
+              <Icons.gitHub className="text-brand h-5 w-5" />
               Continue with GitHub
             </Button>
           </form>
