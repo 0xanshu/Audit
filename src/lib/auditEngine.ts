@@ -52,7 +52,6 @@ export function runAuditEngine(input: AuditConfiguration): AuditResult {
       );
       const planData = planKey ? toolData.plans[planKey] : undefined;
 
-      // Calculate MSRP expected cost
       const expectedMSRP =
         toolData.type === "subscription" && planData
           ? planData.priceMonthly * t.seats
@@ -65,23 +64,56 @@ export function runAuditEngine(input: AuditConfiguration): AuditResult {
         reason = `You are spending $${t.monthlySpend}/mo but ${t.seats} seats on the ${t.plan} plan should only cost $${expectedMSRP}/mo.`;
       } else if (
         t.seats < 5 &&
-        (t.plan.toLowerCase().includes("enterprise") ||
-          t.plan.toLowerCase().includes("business") ||
-          t.plan.toLowerCase().includes("team"))
+        [
+          "enterprise",
+          "business",
+          "team",
+          "ultra",
+          "max",
+          "pro-plus",
+          "pro+",
+          "premium",
+        ].some((tier) => t.plan.toLowerCase().includes(tier))
       ) {
         status = "downgrade";
         const lowerPlanPrice =
           toolData.plans.pro?.priceMonthly ??
           toolData.plans.plus?.priceMonthly ??
+          toolData.plans["ai-pro"]?.priceMonthly ??
+          toolData.plans["team-standard"]?.priceMonthly ??
           20;
+
         const proposedCost = lowerPlanPrice * t.seats;
 
         if (t.monthlySpend > proposedCost) {
           status = "downgrade";
           savingsMonthly = t.monthlySpend - proposedCost;
-          recommendedAction = `Downgrade to a Pro/Plus tier.`;
-          reason = `Teams under 5 rarely need Enterprise/Business features. Downgrading saves $${savingsMonthly}/mo.`;
+          recommendedAction = `Downgrade to a standard Pro/Plus tier.`;
+          reason = `Teams under 5 rarely need high-end/enterprise features like ${t.plan}. Downgrading saves $${savingsMonthly}/mo.`;
         }
+      } else if (
+        planData &&
+        planData.priceMonthly >= 100 &&
+        !input.useCase.toLowerCase().includes("research") &&
+        !input.useCase.toLowerCase().includes("data") &&
+        !input.useCase.toLowerCase().includes("heavy")
+      ) {
+        status = "downgrade";
+        const lowerPlanPrice = 20;
+        const proposedCost = lowerPlanPrice * t.seats;
+        savingsMonthly = t.monthlySpend - proposedCost;
+        recommendedAction = "Downgrade from extreme tier.";
+        reason = `Your use case doesn't justify a ${planData.name} tier. Standard Pro plans ($20/mo) are sufficient for general tasks.`;
+      } else if (
+        planData?.priceYearly &&
+        planData.priceYearly < planData.priceMonthly &&
+        t.monthlySpend === planData.priceMonthly * t.seats
+      ) {
+        status = "keep";
+        savingsMonthly =
+          (planData.priceMonthly - planData.priceYearly) * t.seats;
+        recommendedAction = "Switch to annual billing.";
+        reason = `You are paying month-to-month. Switching to an annual plan drops the effective rate to $${planData.priceYearly}/seat/mo.`;
       } else if (
         (t.tool.toLowerCase().includes("openai") ||
           t.tool.toLowerCase().includes("chatgpt")) &&

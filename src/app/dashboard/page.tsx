@@ -4,7 +4,7 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#0F1117] text-white">
       {/* Top Navigation */}
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-800 bg-[#1A1D24] px-12 py-6">
+      <header className="sticky top-0 z-10 flex items-center justify-between bg-[#1A1D24] px-12 py-6">
         <div className="flex items-center gap-4">
           <h1 className="text-brand text-xl font-bold tracking-tight">
             Audits<span className="text-white">Pro</span>
@@ -41,7 +41,7 @@ export default function DashboardPage() {
       <div className="flex w-full flex-1 flex-col gap-4 p-4 md:flex-row">
         {/* Sidebar */}
         <aside className="flex w-full shrink-0 flex-col gap-2 md:w-64">
-          <div className="rounded-lg border border-gray-800 bg-[#1A1D24] p-4">
+          <div className="rounded-lg bg-[#1A1D24] p-4">
             <h3 className="mb-3 text-xs font-semibold tracking-wider text-gray-400 uppercase">
               Menu
             </h3>
@@ -73,7 +73,7 @@ export default function DashboardPage() {
             </ul>
           </div>
 
-          <div className="mt-auto rounded-lg border border-gray-800 bg-[#1A1D24] p-4">
+          <div className="mt-auto rounded-lg bg-[#1A1D24] p-4">
             <div className="flex items-center gap-4">
               <div className="from-brand h-10 w-10 rounded-full bg-gradient-to-tr to-purple-500"></div>
               <div>
@@ -86,29 +86,29 @@ export default function DashboardPage() {
 
         {/* Dashboard Content */}
         <main className="flex flex-1 flex-col gap-4">
-          <div className="rounded-lg border border-gray-800 bg-[#1A1D24] p-4">
+          <div className="rounded-lg bg-[#1A1D24] p-4">
             <h2 className="mb-2 text-2xl font-bold">Welcome back, Jane!</h2>
             <p className="mb-6 text-gray-400">
               Here&apos;s what&apos;s happening with your projects today.
             </p>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-md border border-gray-800 bg-[#0F1117] p-4">
+              <div className="rounded-md bg-[#0F1117] p-4">
                 <p className="mb-1 text-sm text-gray-400">Total Savings</p>
                 <p className="text-brand text-3xl font-bold">$4,250</p>
               </div>
-              <div className="rounded-md border border-gray-800 bg-[#0F1117] p-4">
+              <div className="rounded-md bg-[#0F1117] p-4">
                 <p className="mb-1 text-sm text-gray-400">Active Audits</p>
                 <p className="text-3xl font-bold text-white">12</p>
               </div>
-              <div className="rounded-md border border-gray-800 bg-[#0F1117] p-4">
+              <div className="rounded-md bg-[#0F1117] p-4">
                 <p className="mb-1 text-sm text-gray-400">Recommendations</p>
                 <p className="text-3xl font-bold text-white">5</p>
               </div>
             </div>
           </div>
 
-          <div className="flex-1 rounded-lg border border-gray-800 bg-[#1A1D24] p-4">
+          <div className="flex-1 rounded-lg bg-[#1A1D24] p-4">
             <div className="mb-6 flex items-center justify-between">
               <h3 className="text-lg font-semibold">Recent Audits</h3>
               <Button variant="pill" size="sm">
@@ -120,7 +120,7 @@ export default function DashboardPage() {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between rounded-md border border-gray-800 bg-[#0F1117] p-4"
+                  className="flex items-center justify-between rounded-md bg-[#0F1117] p-4"
                 >
                   <div>
                     <h4 className="mb-1 font-medium text-white">

@@ -1,6 +1,7 @@
 export type PricingPlan = {
   name: string;
   priceMonthly: number;
+  priceYearly?: number;
   minSeats?: number;
   features?: string[];
 };
@@ -17,16 +18,20 @@ export const AI_TOOLS_PRICING: Record<string, ToolPricing> = {
     tool: "Cursor",
     type: "subscription",
     plans: {
-      hobby: { name: "Hobby", priceMonthly: 0 },
-      pro: { name: "Pro", priceMonthly: 20 },
-      business: { name: "Business", priceMonthly: 40 },
+      hobby: { name: "Hobby", priceMonthly: 0, priceYearly: 0 },
+      pro: { name: "Pro", priceMonthly: 20, priceYearly: 16 },
+      "pro-plus": { name: "Pro+", priceMonthly: 60, priceYearly: 48 },
+      ultra: { name: "Ultra", priceMonthly: 200, priceYearly: 160 },
+      business: { name: "Business", priceMonthly: 40, minSeats: 1 },
     },
   },
   Copilot: {
     tool: "Copilot",
     type: "subscription",
     plans: {
-      individual: { name: "Individual", priceMonthly: 10 },
+      free: { name: "free", priceMonthly: 0 },
+      pro: { name: "Pro", priceMonthly: 10 },
+      "pro-plus": { name: "Pro+", priceMonthly: 39 },
       business: { name: "Business", priceMonthly: 19 },
       enterprise: { name: "Enterprise", priceMonthly: 39 },
     },
@@ -36,8 +41,20 @@ export const AI_TOOLS_PRICING: Record<string, ToolPricing> = {
     type: "subscription",
     plans: {
       free: { name: "Free", priceMonthly: 0 },
-      pro: { name: "Pro", priceMonthly: 20 },
-      team: { name: "Team", priceMonthly: 30, minSeats: 5 },
+      pro: { name: "Pro", priceMonthly: 20, priceYearly: 17 },
+      max: { name: "Max", priceMonthly: 100 },
+      "team-standard": {
+        name: "Standard Team",
+        priceMonthly: 25,
+        priceYearly: 20,
+        minSeats: 5,
+      },
+      "team-premium": {
+        name: "Premium Team",
+        priceMonthly: 125,
+        priceYearly: 100,
+        minSeats: 5,
+      },
     },
   },
   ChatGPT: {
@@ -45,9 +62,15 @@ export const AI_TOOLS_PRICING: Record<string, ToolPricing> = {
     type: "subscription",
     plans: {
       free: { name: "Free", priceMonthly: 0 },
+      go: { name: "Go", priceMonthly: 8 },
       plus: { name: "Plus", priceMonthly: 20 },
-      team: { name: "Team", priceMonthly: 30, minSeats: 2 },
-      enterprise: { name: "Enterprise", priceMonthly: 60, minSeats: 150 },
+      Pro: { name: "Pro", priceMonthly: 100 },
+      Business: {
+        name: "Business",
+        priceMonthly: 25,
+        priceYearly: 25,
+        minSeats: 2,
+      },
     },
   },
   Anthropic: {
@@ -73,7 +96,9 @@ export const AI_TOOLS_PRICING: Record<string, ToolPricing> = {
     type: "subscription",
     plans: {
       free: { name: "Free", priceMonthly: 0 },
-      advanced: { name: "Gemini Advanced", priceMonthly: 20 },
+      "ai-plus": { name: "AI Plus", priceMonthly: 8 },
+      "ai-pro": { name: "AI Pro", priceMonthly: 20 },
+      "ai-ultra": { name: "AI Ultra", priceMonthly: 250 },
     },
   },
   Windsurf: {
@@ -81,7 +106,9 @@ export const AI_TOOLS_PRICING: Record<string, ToolPricing> = {
     type: "subscription",
     plans: {
       free: { name: "Free", priceMonthly: 0 },
-      pro: { name: "Pro", priceMonthly: 15 },
+      pro: { name: "Pro", priceMonthly: 20 },
+      max: { name: "Max", priceMonthly: 200 },
+      team: { name: "Teams", priceMonthly: 40, minSeats: 2 },
     },
   },
 };
