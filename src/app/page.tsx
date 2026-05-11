@@ -1,37 +1,65 @@
 import Link from "next/link";
+import { ArrowRight, ShieldCheck, Zap, TrendingDown } from "lucide-react";
 
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-      <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-        <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">
-          Create <span className="text-[hsl(280,100%,70%)]">T3</span> App
-        </h1>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
-          <Link
-            className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 text-white hover:bg-white/20"
-            href="https://create.t3.gg/en/usage/first-steps"
-            target="_blank"
-          >
-            <h3 className="text-2xl font-bold">First Steps →</h3>
-            <div className="text-lg">
-              Just the basics - Everything you need to know to set up your
-              database and authentication.
-            </div>
-          </Link>
-          <Link
-            className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 text-white hover:bg-white/20"
-            href="https://create.t3.gg/en/introduction"
-            target="_blank"
-          >
-            <h3 className="text-2xl font-bold">Documentation →</h3>
-            <div className="text-lg">
-              Learn more about Create T3 App, the libraries it uses, and how to
-              deploy it.
-            </div>
-          </Link>
+    <main className="bg-sand-100 flex min-h-screen flex-col">
+      {/* Hero */}
+      <section className="relative flex flex-col items-center justify-center px-4 py-24 text-center">
+        <div className="mx-auto max-w-3xl space-y-6">
+          <h1 className="text-ink text-5xl font-extrabold tracking-tight sm:text-7xl">
+            Cut Your <span className="text-aqua">AI Tool</span> Spend
+          </h1>
+          <p className="text-sand-600 mx-auto max-w-2xl text-xl leading-relaxed">
+            We analyze your organization&apos;s AI tool subscriptions and find
+            actionable ways to save money, downgrade over-provisioned plans, and
+            consolidate overlapping tools.
+          </p>
+          <div className="flex flex-col items-center gap-4 pt-4">
+            <Link href="/dashboard">
+              <button className="bg-aqua text-ink hover:bg-aqua-shade inline-flex items-center justify-center gap-3 rounded-[2px] px-8 py-3.5 text-base font-medium shadow-sm transition-colors hover:text-white">
+                Get Your Free Audit
+                <ArrowRight className="h-5 w-5" />
+              </button>
+            </Link>
+            <p className="text-sand-600 text-sm">
+              Takes less than 2 minutes. No credit card required.
+            </p>
+          </div>
         </div>
-      </div>
+
+        {/* Feature highlights */}
+        <div className="mx-auto mt-20 grid max-w-5xl gap-6 px-4 sm:grid-cols-3">
+          <div className="border-sand-200 rounded-xl border bg-white/60 p-6 text-center backdrop-blur-sm transition-all hover:shadow-sm">
+            <ShieldCheck className="text-aqua mx-auto mb-3 h-8 w-8" />
+            <h3 className="text-ink font-semibold">Data-Driven</h3>
+            <p className="text-sand-600 mt-2 text-sm">
+              Powered by real market pricing data for 8+ AI tools.
+            </p>
+          </div>
+          <div className="border-sand-200 rounded-xl border bg-white/60 p-6 text-center backdrop-blur-sm transition-all hover:shadow-sm">
+            <Zap className="text-aqua mx-auto mb-3 h-8 w-8" />
+            <h3 className="text-ink font-semibold">Instant</h3>
+            <p className="text-sand-600 mt-2 text-sm">
+              Get results in seconds. No meetings, no sales calls.
+            </p>
+          </div>
+          <div className="border-sand-200 rounded-xl border bg-white/60 p-6 text-center backdrop-blur-sm transition-all hover:shadow-sm">
+            <TrendingDown className="text-aqua mx-auto mb-3 h-8 w-8" />
+            <h3 className="text-ink font-semibold">Actionable</h3>
+            <p className="text-sand-600 mt-2 text-sm">
+              Clear, specific recommendations with dollar amounts attached.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-sand-200 border-t bg-white/50 py-8">
+        <div className="text-sand-600 mx-auto flex max-w-7xl items-center justify-between px-5 text-sm">
+          <p> Audit. All rights reserved.</p>
+        </div>
+      </footer>
     </main>
   );
 }

@@ -34,25 +34,17 @@ model Account {
   type                     String
   provider                 String
   providerAccountId        String
-  refresh_token            String? // @db.Text
-  access_token             String? // @db.Text
+  refresh_token            String? @db.Text
+  access_token             String? @db.Text
   expires_at               Int?
   token_type               String?
   scope                    String?
-  id_token                 String? // @db.Text
+  id_token                 String? @db.Text
   session_state            String?
   user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   refresh_token_expires_in Int?
 
   @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model User {
@@ -61,26 +53,27 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  password      String?
   accounts      Account[]
-  sessions      Session[]
   posts         Post[]
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
+  audits        Audit[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model Audit {
-  id          String   @id @default(cuid())
-  userInput   Json
-  auditResult Json
-  createdAt   DateTime @default(now())
+  id                  String   @id @default(cuid())
+  userId              String?
+  userInput           Json
+  auditResult         Json
+  totalSavingsMonthly Float
+  aiSummary           String   @default("")
+  createdAt           DateTime @default(now())
 
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
   leads Lead[]
+
+  @@index([userId])
 }
 
 model Lead {

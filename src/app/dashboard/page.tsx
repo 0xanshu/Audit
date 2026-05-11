@@ -1,147 +1,112 @@
-import { Button } from "~/components/ui/button";
+import { db } from "~/server/db";
+import { AuditForm } from "./_components/audit-form";
+import { StatsBar } from "./_components/stats-bar";
+import { AuditResults } from "./_components/audit-results";
+import { HistoricalAudits } from "./_components/historical-audits";
+import { auth } from "~/server/auth";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { logoutAction } from "~/server/actions/auth";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const audits = await db.audit.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+  });
+
+  const totalSavings = audits.reduce(
+    (sum, a) => sum + (a.totalSavingsMonthly ?? 0),
+    0,
+  );
+
+  const totalTools = audits.reduce(
+    (sum, a) =>
+      sum +
+      (Array.isArray((a.userInput as unknown as { tools?: unknown[] })?.tools)
+        ? ((a.userInput as unknown as { tools?: unknown[] }).tools?.length ?? 0)
+        : 0),
+    0,
+  );
+
   return (
-    <div className="flex min-h-screen flex-col bg-[#0F1117] text-white">
+    <div className="bg-sand-100 min-h-screen">
       {/* Top Navigation */}
-      <header className="sticky top-0 z-10 flex items-center justify-between bg-[#1A1D24] px-12 py-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-brand text-xl font-bold tracking-tight">
-            Audits<span className="text-white">Pro</span>
-          </h1>
-          <nav className="hidden gap-4 md:flex">
-            <a href="#" className="text-sm font-medium text-white">
-              Overview
-            </a>
-            <a
-              href="#"
-              className="text-sm font-medium text-gray-400 transition-colors hover:text-white"
-            >
-              Integrations
-            </a>
-            <a
-              href="#"
-              className="text-sm font-medium text-gray-400 transition-colors hover:text-white"
-            >
-              Settings
-            </a>
-          </nav>
-        </div>
-        <div className="flex items-center gap-4">
-          <Button variant="pill" size="sm">
-            Learn More
-          </Button>
-          <Button variant="pill" size="sm">
-            New Audit
-          </Button>
+      <header className="border-sand-200/50 sticky top-0 z-50 border-b bg-white/70 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
+          <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="bg-aqua text-ink flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
+                CA
+              </div>
+              <span className="text-ink text-sm font-semibold tracking-tight">
+                Audit
+              </span>
+            </Link>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sand-600 text-sm">
+              {session.user.name ?? session.user.email}
+            </span>
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="text-sand-600 hover:text-ink text-sm transition-colors"
+                title="Log out"
+              >
+                Log out
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <div className="flex w-full flex-1 flex-col gap-4 p-4 md:flex-row">
-        {/* Sidebar */}
-        <aside className="flex w-full shrink-0 flex-col gap-2 md:w-64">
-          <div className="rounded-lg bg-[#1A1D24] p-4">
-            <h3 className="mb-3 text-xs font-semibold tracking-wider text-gray-400 uppercase">
-              Menu
-            </h3>
-            <ul className="space-y-1">
-              <li>
-                <a
-                  href="#"
-                  className="block rounded-md bg-gray-800 px-3 py-2 text-sm font-medium text-white"
-                >
-                  Dashboard
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="block rounded-md px-3 py-2 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
-                >
-                  My Audits
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="block rounded-md px-3 py-2 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
-                >
-                  Team
-                </a>
-              </li>
-            </ul>
-          </div>
+      <main className="mx-auto max-w-7xl space-y-12 px-5 py-12">
+        {/* Hero */}
+        <section>
+          <h1 className="text-ink text-4xl font-bold tracking-tight sm:text-5xl">
+            AI Spend <span className="text-aqua">Audit</span>
+          </h1>
+          <p className="text-sand-600 mt-3 max-w-2xl text-lg">
+            Find savings in your AI tool stack. Input your subscriptions and get
+            an instant, data-backed savings report.
+          </p>
+        </section>
 
-          <div className="mt-auto rounded-lg bg-[#1A1D24] p-4">
-            <div className="flex items-center gap-4">
-              <div className="from-brand h-10 w-10 rounded-full bg-gradient-to-tr to-purple-500"></div>
-              <div>
-                <p className="text-sm font-medium">Jane Doe</p>
-                <p className="text-xs text-gray-400">Pro Plan</p>
-              </div>
-            </div>
-          </div>
-        </aside>
+        {/* Stats Bar */}
+        <StatsBar
+          totalSavings={totalSavings}
+          auditCount={audits.length}
+          totalTools={totalTools}
+        />
 
-        {/* Dashboard Content */}
-        <main className="flex flex-1 flex-col gap-4">
-          <div className="rounded-lg bg-[#1A1D24] p-4">
-            <h2 className="mb-2 text-2xl font-bold">Welcome back, Jane!</h2>
-            <p className="mb-6 text-gray-400">
-              Here&apos;s what&apos;s happening with your projects today.
-            </p>
+        {/* Audit Form */}
+        <section id="audit-form" className="scroll-mt-24">
+          <AuditForm />
+        </section>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-md bg-[#0F1117] p-4">
-                <p className="mb-1 text-sm text-gray-400">Total Savings</p>
-                <p className="text-brand text-3xl font-bold">$4,250</p>
-              </div>
-              <div className="rounded-md bg-[#0F1117] p-4">
-                <p className="mb-1 text-sm text-gray-400">Active Audits</p>
-                <p className="text-3xl font-bold text-white">12</p>
-              </div>
-              <div className="rounded-md bg-[#0F1117] p-4">
-                <p className="mb-1 text-sm text-gray-400">Recommendations</p>
-                <p className="text-3xl font-bold text-white">5</p>
-              </div>
-            </div>
-          </div>
+        {/* Audit Results */}
+        <AuditResults />
 
-          <div className="flex-1 rounded-lg bg-[#1A1D24] p-4">
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Recent Audits</h3>
-              <Button variant="pill" size="sm">
-                View All
-              </Button>
-            </div>
+        {/* Historical Audits */}
+        <HistoricalAudits audits={audits} />
+      </main>
 
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-md bg-[#0F1117] p-4"
-                >
-                  <div>
-                    <h4 className="mb-1 font-medium text-white">
-                      Project Delta {i}
-                    </h4>
-                    <p className="text-xs text-gray-400">Executed 2 days ago</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-brand text-sm font-bold">
-                      -$300/mo
-                    </span>
-                    <Button variant="pill" size="sm" className="h-8 text-xs">
-                      Apply Fix
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </main>
-      </div>
+      {/* Footer */}
+      <footer className="border-sand-200 border-t bg-white/50 py-8">
+        <div className="text-sand-600 mx-auto flex max-w-7xl items-center justify-between px-5 text-sm">
+          <p> Audit. All rights reserved.</p>
+          <Link href="/" className="hover:text-ink transition-colors">
+            Terms &middot; Privacy
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }
