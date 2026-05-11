@@ -8,6 +8,7 @@
   --font-sans:
     var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-tomato: var(--font-tomato), ui-sans-serif, system-ui, sans-serif;
 
   /* ── Windsurf-inspired palette ─────────────────────────────────────── */
   --color-sand-50:  #FDFCFA;

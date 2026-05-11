@@ -5,6 +5,7 @@ import { runAuditEngine, type AuditConfiguration } from "~/lib/auditEngine";
 import { revalidatePath } from "next/cache";
 
 import { auth } from "~/server/auth";
+import { generateAuditSummaryAction } from "./ai";
 
 export async function createAuditAction(input: AuditConfiguration) {
   try {
@@ -13,7 +14,16 @@ export async function createAuditAction(input: AuditConfiguration) {
     // 1. Run the data through our mathematical audit engine
     const result = runAuditEngine(input);
 
-    // 2. Persist the raw input, recommendations, and savings to the database
+    // 2. Generate personalized AI summary (with hardcoded fallback)
+    const { summary: generatedSummary } = await generateAuditSummaryAction(
+      result.recommendations,
+      result.totalSavingsMonthly,
+      input.tools,
+      input.teamSize,
+      input.useCase,
+    );
+
+    // 3. Persist the raw input, recommendations, and savings to the database
     const savedAudit = await db.audit.create({
       data: {
         userId: session?.user?.id ?? null,
@@ -22,7 +32,7 @@ export async function createAuditAction(input: AuditConfiguration) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
         auditResult: result.recommendations as unknown as any,
         totalSavingsMonthly: result.totalSavingsMonthly,
-        aiSummary: result.summary || "",
+        aiSummary: generatedSummary || result.summary || "",
       },
     });
 

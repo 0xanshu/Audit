@@ -12,8 +12,7 @@ const cardVariants = cva("rounded-xl transition-all duration-200", {
     variant: {
       default: "bg-white border border-sand-200 shadow-sm hover:shadow-md",
       primary: "bg-white border border-sand-200 shadow-sm",
-      glass:
-        "bg-white/80 backdrop-blur-md border border-white/20 shadow-sm",
+      glass: "bg-white/80 backdrop-blur-md border border-white/20 shadow-sm",
       flat: "bg-sand-50 border border-sand-200",
       borderless: "bg-transparent shadow-none border-none",
     },
@@ -57,8 +56,8 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-tight tracking-tight text-ink",
-      className
+      "text-ink text-lg leading-tight font-semibold tracking-tight",
+      className,
     )}
     {...props}
   />
@@ -71,28 +70,30 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-sand-600 leading-relaxed", className)}
+    className={cn("text-sand-600 text-sm leading-relaxed", className)}
     {...props}
   />
 ));
 CardDescription.displayName = "CardDescription";
 
-const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("", className)} {...props} />
-  )
-);
+const CardContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("", className)} {...props} />
+));
 CardContent.displayName = "CardContent";
 
-const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn("mt-4 flex items-center gap-2", className)}
-      {...props}
-    />
-  )
-);
+const CardFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("mt-4 flex items-center gap-2", className)}
+    {...props}
+  />
+));
 CardFooter.displayName = "CardFooter";
 
 /* ─── Button ────────────────────────────────────────────────────────────────── */
@@ -127,11 +128,12 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
+  },
 );
 
 interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
@@ -146,7 +148,7 @@ const ButtonUI = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       />
     );
-  }
+  },
 );
 ButtonUI.displayName = "ButtonUI";
 
@@ -170,11 +172,12 @@ const badgeVariants = cva(
     defaultVariants: {
       variant: "default",
     },
-  }
+  },
 );
 
 interface BadgeProps
-  extends React.HTMLAttributes<HTMLSpanElement>,
+  extends
+    React.HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof badgeVariants> {}
 
 const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
@@ -184,7 +187,7 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       className={cn(badgeVariants({ variant }), className)}
       {...props}
     />
-  )
+  ),
 );
 Badge.displayName = "Badge";
 
@@ -198,9 +201,15 @@ interface StatCardProps {
   tone?: "default" | "success" | "warning";
 }
 
-function StatCard({ label, value, subtext, icon, tone = "default" }: StatCardProps) {
+function StatCard({
+  label,
+  value,
+  subtext,
+  icon,
+  tone = "default",
+}: StatCardProps) {
   const toneStyles = {
-    default: "bg-white border-sand-200",
+    default: "bg-white border-black/0",
     success: "bg-emerald-50 border-emerald-200",
     warning: "bg-amber-50 border-amber-200",
   };
@@ -209,15 +218,13 @@ function StatCard({ label, value, subtext, icon, tone = "default" }: StatCardPro
     <div className={cn("rounded-xl border p-6", toneStyles[tone])}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium tracking-wide text-sand-600 uppercase">
+          <p className="text-sand-600 text-sm font-medium tracking-wide uppercase">
             {label}
           </p>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-ink">
+          <p className="text-ink mt-2 text-3xl font-bold tracking-tight">
             {value}
           </p>
-          {subtext && (
-            <p className="mt-1 text-sm text-sand-600">{subtext}</p>
-          )}
+          {subtext && <p className="text-sand-600 mt-1 text-sm">{subtext}</p>}
         </div>
         {icon && <div className="text-sand-400">{icon}</div>}
       </div>
@@ -227,18 +234,19 @@ function StatCard({ label, value, subtext, icon, tone = "default" }: StatCardPro
 
 /* ─── Input ─────────────────────────────────────────────────────────────────── */
 
-const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, ...props }, ref) => (
-    <input
-      ref={ref}
-      className={cn(
-        "h-10 w-full rounded-lg border border-sand-300 bg-sand-50 px-3 py-2 text-sm text-ink placeholder:text-sand-600 focus:outline-none focus:ring-2 focus:ring-aqua focus:ring-offset-2 focus:border-transparent transition-all",
-        className
-      )}
-      {...props}
-    />
-  )
-);
+const Input = React.forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(({ className, ...props }, ref) => (
+  <input
+    ref={ref}
+    className={cn(
+      "border-sand-300 bg-sand-50 text-ink placeholder:text-sand-600 focus:ring-aqua h-10 w-full rounded-lg border px-3 py-2 text-sm transition-all focus:border-transparent focus:ring-2 focus:ring-offset-2 focus:outline-none",
+      className,
+    )}
+    {...props}
+  />
+));
 Input.displayName = "Input";
 
 /* ─── Label ─────────────────────────────────────────────────────────────────── */
@@ -250,8 +258,8 @@ const Label = React.forwardRef<
   <label
     ref={ref}
     className={cn(
-      "text-sm font-medium leading-none text-ink peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-      className
+      "text-ink text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+      className,
     )}
     {...props}
   />
@@ -260,15 +268,12 @@ Label.displayName = "Label";
 
 /* ─── Separator ───────────────────────────────────────────────────────────── */
 
-const Separator = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn("h-px bg-sand-200", className)}
-      {...props}
-    />
-  )
-);
+const Separator = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("bg-sand-200 h-px", className)} {...props} />
+));
 Separator.displayName = "Separator";
 
 /* ─── Exported ────────────────────────────────────────────────────────────── */

@@ -6,7 +6,7 @@ import { HistoricalAudits } from "./_components/historical-audits";
 import { auth } from "~/server/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { logoutAction } from "~/server/actions/auth";
+import { Navbar } from "~/components/navbar";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -36,44 +36,17 @@ export default async function DashboardPage() {
   );
 
   return (
-    <div className="bg-sand-100 min-h-screen">
+    <div className="min-h-screen bg-[#f5ecdc]/80">
       {/* Top Navigation */}
-      <header className="border-sand-200/50 sticky top-0 z-50 border-b bg-white/70 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
-          <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="bg-aqua text-ink flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
-                CA
-              </div>
-              <span className="text-ink text-sm font-semibold tracking-tight">
-                Audit
-              </span>
-            </Link>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sand-600 text-sm">
-              {session.user.name ?? session.user.email}
-            </span>
-            <form action={logoutAction}>
-              <button
-                type="submit"
-                className="text-sand-600 hover:text-ink text-sm transition-colors"
-                title="Log out"
-              >
-                Log out
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="mx-auto max-w-7xl space-y-12 px-5 py-12">
         {/* Hero */}
         <section>
-          <h1 className="text-ink text-4xl font-bold tracking-tight sm:text-5xl">
+          <h1 className="text-ink font-tomato text-4xl font-semibold tracking-tight sm:text-5xl">
             AI Spend <span className="text-aqua">Audit</span>
           </h1>
-          <p className="text-sand-600 mt-3 max-w-2xl text-lg">
+          <p className="text-sand-600 text-md mt-3 max-w-2xl">
             Find savings in your AI tool stack. Input your subscriptions and get
             an instant, data-backed savings report.
           </p>
