@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { auth } from "~/server/auth";
 import { db } from "~/server/db";
 import {
   Card,
@@ -9,9 +10,45 @@ import {
 } from "~/components/ui/card";
 import { AuditRefresh } from "./_components/audit-refresh";
 import { DetailedRecommendations } from "./_components/detailed-recommendations";
+import { EmailGate } from "./_components/email-gate";
 import type { ToolRecommendation } from "~/lib/auditEngine";
 import { Navbar } from "~/components/navbar";
 import { Lightbulb } from "lucide-react";
+import type { Metadata } from "next";
+
+/* ─── Dynamic OG Meta Tags ─────────────────────────────────────────────────── */
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const audit = await db.audit.findUnique({ where: { id } });
+
+  if (!audit) return { title: "Audit Not Found" };
+
+  const savings = audit.totalSavingsMonthly.toFixed(0);
+
+  return {
+    title: `AI Spend Audit: Save $${savings}/month`,
+    description:
+      "Review your AI tool stack and find actionable ways to cut costs, downgrade over-provisioned plans, and consolidate overlapping tools.",
+    openGraph: {
+      title: `AI Spend Audit: Save $${savings}/month`,
+      description:
+        "See exactly where your team is overspending on AI tools — and what to do about it.",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `AI Spend Audit: Save $${savings}/month`,
+      description: "Cut your AI tool spend with a free instant audit.",
+    },
+  };
+}
+
+/* ─── Page ─────────────────────────────────────────────────────────────────── */
 
 export default async function AuditDetailsPage({
   params,
@@ -19,13 +56,10 @@ export default async function AuditDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const audit = await db.audit.findUnique({
-    where: { id },
-  });
+  const session = await auth();
+  const audit = await db.audit.findUnique({ where: { id } });
 
-  if (!audit) {
-    notFound();
-  }
+  if (!audit) notFound();
 
   const isProcessing = audit.status === "processing";
   const recommendations =
@@ -49,14 +83,14 @@ export default async function AuditDetailsPage({
           <Card className="bg-aqua-50 border-aqua-100">
             <CardContent className="p-8 text-center">
               <div className="mb-4 flex justify-center">
-                <div className="border-primary border-aqua h-12 w-12 animate-spin rounded-full border-4 border-b-0"></div>
+                <div className="border-aqua h-12 w-12 animate-spin rounded-full border-4 border-b-0"></div>
               </div>
               <h3 className="text-xl font-semibold">
                 Generating Your Personalized Analysis
               </h3>
               <p className="text-muted-foreground mx-auto mt-2 max-w-md">
                 We are currently generating an AI summary based on your usage
-                data. This typically takes 10-20 seconds. Please wait...
+                data. This typically takes 10–20 seconds. Please wait...
               </p>
             </CardContent>
           </Card>
@@ -123,6 +157,11 @@ export default async function AuditDetailsPage({
               </CardContent>
             </Card>
           </>
+        )}
+
+        {/* Email Gate — shown to unauthenticated visitors after a completed audit */}
+        {!isProcessing && !session && audit.status === "completed" && (
+          <EmailGate auditId={audit.id} />
         )}
       </div>
     </>

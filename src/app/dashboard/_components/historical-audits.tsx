@@ -101,7 +101,7 @@ export function HistoricalAudits({ audits }: HistoricalAuditsProps) {
                       ))}
                     </div>
                     <Link
-                      href={`/dashboard/audit/${audit.id}`}
+                      href={`/audit/${audit.id}`}
                       className="bg-aqua hover:bg-aqua-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap text-white transition-colors"
                     >
                       View Details

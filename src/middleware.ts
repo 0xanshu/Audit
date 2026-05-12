@@ -12,7 +12,8 @@ export default auth((req) => {
     nextUrl.pathname.startsWith("/login") ||
     nextUrl.pathname.startsWith("/register");
 
-  const isPublicPage = nextUrl.pathname === "/";
+  const isPublicPage =
+    nextUrl.pathname === "/" || nextUrl.pathname.startsWith("/audit/");
 
   if (isAuthPage && isAuthenticated) {
     return NextResponse.redirect(new URL("/dashboard", nextUrl));

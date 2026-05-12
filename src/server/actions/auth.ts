@@ -5,6 +5,17 @@ import { z } from "zod";
 import { signIn, signOut } from "~/server/auth";
 import { db } from "~/server/db";
 
+/* ─── Helpers ──────────────────────────────────────────────────────────────── */
+
+function isNextRedirect(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    String((error as { digest: unknown }).digest).startsWith("NEXT_")
+  );
+}
+
 /* ─── Constants ────────────────────────────────────────────────────────────── */
 
 const SALT_ROUNDS = 10;
@@ -87,15 +98,7 @@ export async function loginAction(formData: FormData) {
       redirectTo: "/dashboard",
     });
   } catch (error) {
-    // NextAuth throws on redirect; rethrow so the framework handles it
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "digest" in error &&
-      String(error.digest).startsWith("NEXT_")
-    ) {
-      throw error;
-    }
+    if (isNextRedirect(error)) throw error;
     return { error: "Invalid credentials" };
   }
 }
@@ -104,6 +107,10 @@ export async function registerAction(formData: FormData) {
   const emailRaw = formData.get("email");
   const passwordRaw = formData.get("password");
   const nameRaw = formData.get("name");
+  const claimAuditId =
+    typeof formData.get("claimAudit") === "string"
+      ? (formData.get("claimAudit") as string)
+      : null;
 
   const parse = registerSchema.safeParse({
     name: typeof nameRaw === "string" ? nameRaw : "",
@@ -124,44 +131,45 @@ export async function registerAction(formData: FormData) {
 
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
+  let newUserId: string;
   try {
-    await db.user.create({
-      data: {
-        email,
-        name,
-        password: hashedPassword,
-      },
+    const user = await db.user.create({
+      data: { email, name, password: hashedPassword },
     });
+    newUserId = user.id;
   } catch (error) {
-    // Prisma unique constraint violation (P2002)
     if (
       typeof error === "object" &&
       error !== null &&
       "code" in error &&
-      error.code === "P2002"
+      (error as { code: string }).code === "P2002"
     ) {
-      return { error: "User already exists" };
+      return { error: "An account with this email already exists" };
     }
-    console.error("Registration failed:", error);
-    return { error: "Failed to create account" };
+    console.error("[auth] Registration failed:", error);
+    return { error: "Failed to create account. Please try again." };
   }
 
-  try {
-    await signIn("credentials", {
-      email,
-      password,
-      redirectTo: "/dashboard",
-    });
-  } catch (error) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "digest" in error &&
-      String(error.digest).startsWith("NEXT_")
-    ) {
-      throw error;
+  // Claim the anonymous audit if one was passed
+  if (claimAuditId) {
+    try {
+      await db.audit.updateMany({
+        where: { id: claimAuditId, userId: null, claimedByUserId: null },
+        data: { claimedByUserId: newUserId },
+      });
+    } catch (err) {
+      // Non-fatal — user still gets their account
+      console.error("[auth] Failed to claim audit:", err);
     }
-    return { error: "Failed to sign in" };
+  }
+
+  const redirectTo = claimAuditId ? `/audit/${claimAuditId}` : "/dashboard";
+
+  try {
+    await signIn("credentials", { email, password, redirectTo });
+  } catch (error) {
+    if (isNextRedirect(error)) throw error;
+    return { error: "Account created but sign-in failed. Please log in." };
   }
 }
 
@@ -173,14 +181,7 @@ export async function signInWithGitHub() {
   try {
     await signIn("github", { redirectTo: "/dashboard" });
   } catch (error) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "digest" in error &&
-      String(error.digest).startsWith("NEXT_")
-    ) {
-      throw error;
-    }
+    if (isNextRedirect(error)) throw error;
     throw new Error("GitHub sign-in failed");
   }
 }

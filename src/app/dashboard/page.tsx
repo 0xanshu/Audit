@@ -1,5 +1,5 @@
 import { db } from "~/server/db";
-import { AuditForm } from "./_components/audit-form";
+import { AuditForm } from "~/app/_components/audit-form";
 import { StatsBar } from "./_components/stats-bar";
 import { AuditResults } from "./_components/audit-results";
 import { HistoricalAudits } from "./_components/historical-audits";
@@ -16,7 +16,9 @@ export default async function DashboardPage() {
   }
 
   const audits = await db.audit.findMany({
-    where: { userId: session.user.id },
+    where: {
+      OR: [{ userId: session.user.id }, { claimedByUserId: session.user.id }],
+    },
     orderBy: { createdAt: "desc" },
     take: 10,
   });

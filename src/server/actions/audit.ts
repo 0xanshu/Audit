@@ -6,16 +6,17 @@ import {
   type AuditConfiguration,
   type ToolRecommendation,
 } from "~/lib/auditEngine";
-import { revalidatePath, revalidateTag } from "next/cache";
-
+import { revalidatePath } from "next/cache";
 import { auth } from "~/server/auth";
 import { generateAuditSummaryAction } from "./ai";
+
+/* ─── Background AI summary ─────────────────────────────────────────────────── */
 
 async function processAuditSummaryAsync(
   auditId: string,
   recommendations: ToolRecommendation[],
   totalSavingsMonthly: number,
-  tools: { tool: string; plan: string; monthlySpend: number; seats: number }[],
+  tools: AuditConfiguration["tools"],
   teamSize: number,
   useCase: string,
   fallbackSummary: string | undefined,
@@ -37,46 +38,61 @@ async function processAuditSummaryAsync(
         aiSummaryError: success ? null : "AI generation failed",
       },
     });
-  } catch (error) {
-    console.error("Failed async AI summary update:", error);
+  } catch (err) {
+    console.error("[audit] AI summary failed:", err);
     await db.audit.update({
       where: { id: auditId },
       data: {
         aiSummary: fallbackSummary ?? "",
         status: "failed",
-        aiSummaryError: String(error),
+        aiSummaryError: err instanceof Error ? err.message : String(err),
       },
     });
-  } finally {
-    revalidatePath("/dashboard");
-    revalidatePath(`/dashboard/audit/${auditId}`);
-    revalidateTag(`audit-${auditId}`);
   }
+  // NOTE: No revalidatePath here — calling it outside a server action context
+  // causes "revalidatePath during render" errors. The audit page uses
+  // AuditRefresh (polling router.refresh()) to pick up the completed state.
 }
+
+/* ─── Resolve a safe userId ──────────────────────────────────────────────────── */
+// JWT tokens are stateless — the session may reference a user that no longer
+// exists (e.g. after a DB reset). We verify before using the ID so we never
+// hit a FK violation. Returns null for anonymous / stale sessions.
+async function resolveUserId(
+  sessionUserId: string | undefined,
+): Promise<string | null> {
+  if (!sessionUserId) return null;
+  const user = await db.user.findUnique({
+    where: { id: sessionUserId },
+    select: { id: true },
+  });
+  return user?.id ?? null;
+}
+
+/* ─── Main action ────────────────────────────────────────────────────────────── */
 
 export async function createAuditAction(input: AuditConfiguration) {
   try {
     const session = await auth();
+    const userId = await resolveUserId(session?.user?.id);
 
-    // 1. Run the data through our mathematical audit engine
     const result = runAuditEngine(input);
 
-    // 2. Persist the raw input, recommendations, and savings to the database as "processing"
     const savedAudit = await db.audit.create({
       data: {
-        userId: session?.user?.id ?? null,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-        userInput: input as any,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-        auditResult: result.recommendations as unknown as any,
+        userId,
+        // Prisma Json fields require plain JSON — serialize/deserialize strips type info
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        userInput: JSON.parse(JSON.stringify(input)),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        auditResult: JSON.parse(JSON.stringify(result.recommendations)),
         totalSavingsMonthly: result.totalSavingsMonthly,
         status: "processing",
         aiSummary: "",
       },
     });
 
-    // 3. Kick off AI summary generation in the background
-    // Fire and forget so we don't block the UI
+    // Fire-and-forget AI summary
     void processAuditSummaryAsync(
       savedAudit.id,
       result.recommendations,
@@ -87,12 +103,45 @@ export async function createAuditAction(input: AuditConfiguration) {
       result.summary,
     );
 
-    revalidatePath("/dashboard");
+    if (userId) revalidatePath("/dashboard");
 
-    // 4. Return the generated ID so the frontend can redirect or show results
     return { success: true, auditId: savedAudit.id };
-  } catch (error) {
-    console.error("Audit creation failed:", error);
-    return { success: false, error: "Failed to generate audit." };
+  } catch (err) {
+    console.error("[audit] createAuditAction failed:", err);
+    return {
+      success: false,
+      error: "Failed to generate audit. Please try again.",
+    };
+  }
+}
+
+/* ─── Claim an anonymous audit after login/register ─────────────────────────── */
+
+export async function claimAuditAction(auditId: string) {
+  try {
+    const session = await auth();
+    const userId = await resolveUserId(session?.user?.id);
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const audit = await db.audit.findUnique({
+      where: { id: auditId },
+      select: { userId: true, claimedByUserId: true },
+    });
+
+    if (!audit) return { success: false, error: "Audit not found" };
+
+    // Only claim if it's still anonymous
+    if (!audit.userId && !audit.claimedByUserId) {
+      await db.audit.update({
+        where: { id: auditId },
+        data: { claimedByUserId: userId },
+      });
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (err) {
+    console.error("[audit] claimAuditAction failed:", err);
+    return { success: false, error: "Failed to claim audit." };
   }
 }

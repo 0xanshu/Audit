@@ -4,19 +4,22 @@ import { useActionState } from "react";
 import { Button } from "~/components/ui/button";
 import { registerAction } from "~/server/actions/auth";
 
-export function RegisterForm() {
+export function RegisterForm({ claimAudit }: { claimAudit?: string }) {
   const [error, formAction, isPending] = useActionState<
     { error: string } | undefined,
     FormData
-  >(async (prevState: { error: string } | undefined, formData: FormData) => {
+  >(async (_prev, formData) => {
     const result = await registerAction(formData);
-    if (result?.error) {
-      return result;
-    }
+    if (result?.error) return result;
   }, undefined);
 
   return (
     <form action={formAction} className="mt-8 space-y-4">
+      {/* Hidden field so the server action can claim the audit */}
+      {claimAudit && (
+        <input type="hidden" name="claimAudit" value={claimAudit} />
+      )}
+
       <div>
         <label htmlFor="name" className="text-ink block text-sm font-medium">
           Full Name

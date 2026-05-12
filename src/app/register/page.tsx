@@ -6,11 +6,15 @@ import { Button } from "~/components/ui/button";
 import { signInWithGitHub } from "~/server/actions/auth";
 import { auth } from "~/server/auth";
 
-export default async function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ claimAudit?: string }>;
+}) {
   const session = await auth();
-  if (session) {
-    redirect("/dashboard");
-  }
+  if (session) redirect("/dashboard");
+
+  const { claimAudit } = await searchParams;
 
   return (
     <main className="bg-sand-100 flex min-h-screen flex-col items-center justify-center p-4">
@@ -21,11 +25,13 @@ export default async function RegisterPage() {
               Create an account
             </h2>
             <p className="text-sand-600 mt-2 text-sm">
-              Join Audit to analyze your AI spend
+              {claimAudit
+                ? "Create an account to save your audit report"
+                : "Join Audit to analyze your AI spend"}
             </p>
           </div>
 
-          <RegisterForm />
+          <RegisterForm claimAudit={claimAudit} />
 
           <div className="relative my-6">
             <div className="flex items-center">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, Zap, TrendingDown } from "lucide-react";
 import { Navbar } from "~/components/navbar";
+import { AuditForm } from "~/app/_components/audit-form";
 
 export default function HomePage() {
   return (
@@ -9,7 +10,7 @@ export default function HomePage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="relative flex flex-col items-center justify-center px-4 py-24 text-center">
+      <section className="relative flex flex-col items-center justify-center px-4 py-16 text-center">
         <div className="mx-auto max-w-3xl space-y-6">
           <h1 className="text-ink font-tomato text-5xl tracking-tight sm:text-7xl">
             Cut Your <span className="text-aqua font-tomato">AI Tool</span>{" "}
@@ -20,17 +21,11 @@ export default function HomePage() {
             actionable ways to save money, downgrade over-provisioned plans, and
             consolidate overlapping tools.
           </p>
-          <div className="flex flex-col items-center gap-4 pt-4">
-            <Link href="/dashboard">
-              <button className="bg-aqua text-ink hover:bg-aqua-shade inline-flex cursor-pointer items-center justify-center gap-3 rounded-[2px] px-8 py-3.5 text-base font-medium transition-colors hover:text-black">
-                Get Your Free Audit
-                <ArrowRight className="h-5 w-5" />
-              </button>
-            </Link>
-            <p className="text-sm text-black/50">
-              Takes less than 2 minutes. No credit card required.
-            </p>
-          </div>
+        </div>
+
+        {/* Form embedded */}
+        <div className="mx-auto mt-12 mb-12 w-full max-w-4xl text-left">
+          <AuditForm />
         </div>
 
         {/* Feature highlights */}

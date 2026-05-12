@@ -149,7 +149,7 @@ export function AuditForm() {
         resetForm();
         form.reset();
         setTimeout(() => {
-          window.location.href = `/dashboard/audit/${res.auditId}`;
+          window.location.href = `/audit/${res.auditId}`;
         }, 500);
       } else {
         alert("Failed to analyze tech stack. Please try again.");
