@@ -141,16 +141,25 @@ export function AuditForm() {
   async function onSubmit(data: FormValues) {
     setIsSubmitting(true);
     try {
+      const store = useAuditStore.getState();
+      store.setIsProcessing(true);
+
       const res = await createAuditAction(data);
       if (res.success && res.auditId) {
         resetForm();
         form.reset();
+        setTimeout(() => {
+          window.location.href = `/dashboard/audit/${res.auditId}`;
+        }, 500);
       } else {
         alert("Failed to analyze tech stack. Please try again.");
+        store.setIsProcessing(false);
       }
     } catch (err) {
       console.error(err);
       alert("Error submitting the form.");
+      const store = useAuditStore.getState();
+      store.setIsProcessing(false);
     } finally {
       setIsSubmitting(false);
     }

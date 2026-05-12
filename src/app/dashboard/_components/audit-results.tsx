@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Lightbulb,
 } from "lucide-react";
+import { useAuditStore } from "~/lib/auditStore";
 import type { ToolRecommendation, SuggestionFlag } from "~/lib/auditEngine";
 import { Card, CardContent, Badge } from "~/components/dashboard";
 
@@ -16,7 +17,13 @@ import { Card, CardContent, Badge } from "~/components/dashboard";
 
 const statusConfig: Record<
   SuggestionFlag,
-  { label: string; color: string; bg: string; icon: React.ReactNode; border: string }
+  {
+    label: string;
+    color: string;
+    bg: string;
+    icon: React.ReactNode;
+    border: string;
+  }
 > = {
   keep: {
     label: "Keep",
@@ -53,6 +60,13 @@ const statusConfig: Record<
     border: "border-teal-200",
     icon: <Sparkles className="h-4 w-4" />,
   },
+  upgrade: {
+    label: "Upgrade",
+    color: "text-yellow-700",
+    bg: "bg-yellow-50",
+    border: "border-yellow-200",
+    icon: <Sparkles className="h-4 w-4" />,
+  },
 };
 
 interface AuditResultsProps {
@@ -62,23 +76,56 @@ interface AuditResultsProps {
     totalSavingsYearly: number;
     summary: string;
   } | null;
+  isProcessing?: boolean;
 }
 
-export function AuditResults({ results }: AuditResultsProps) {
+export function AuditResults({
+  results,
+  isProcessing: isProcessingProp,
+}: AuditResultsProps) {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const { isProcessing: isProcessingStore } = useAuditStore();
+
+  // Prefer prop over store, fallback to store
+  const isProcessing = isProcessingProp ?? isProcessingStore;
+
+  if (isProcessing) {
+    return (
+      <section>
+        <Card variant="flat" className="bg-aqua-tint/30 border-aqua/10">
+          <CardContent className="p-8 text-center">
+            <div className="mb-4 flex justify-center">
+              <div className="border-aqua h-12 w-12 animate-spin rounded-full border-4 border-b-0"></div>
+            </div>
+            <h3 className="text-ink text-xl font-semibold">
+              Generating Your Personalized Analysis
+            </h3>
+            <p className="text-sand-600 mx-auto mt-2 max-w-md">
+              We are currently generating an AI summary based on your usage
+              data. This typically takes 10-20 seconds. Please wait...
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
 
   if (!results || results.recommendations.length === 0) {
     return (
       <section>
         <Card variant="flat" className="bg-aqua-tint/30 border-aqua/10">
           <CardContent className="p-8 text-center">
-            <Lightbulb className="mx-auto h-10 w-10 text-aqua mb-4" />
-            <h3 className="text-xl font-semibold text-ink">
+            <Lightbulb className="text-aqua mx-auto mb-4 h-10 w-10" />
+            <h3 className="text-ink text-xl font-semibold">
               Results will appear here
             </h3>
-            <p className="mt-2 text-sand-600 max-w-md mx-auto">
-              Fill out the audit form above to generate your personalized savings
-              report.
+            <p className="text-sand-600 mx-auto mt-2 max-w-md">
+              Fill out the audit form above to generate your personalized
+              savings report.
+            </p>
+            <p className="text-sand-600 mt-4 text-sm">
+              After submission, you&apos;ll be taken to your detailed report
+              page where you can see your AI-powered analysis.
             </p>
           </CardContent>
         </Card>
@@ -90,17 +137,17 @@ export function AuditResults({ results }: AuditResultsProps) {
     <section>
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-ink">
+          <h2 className="text-ink text-2xl font-bold tracking-tight">
             Audit Results
           </h2>
-          <p className="mt-1 text-sand-600">
+          <p className="text-sand-600 mt-1">
             {results.recommendations.filter((r) => r.savingsMonthly > 0).length}{" "}
             action items found
           </p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-sand-600">Total Monthly Savings</p>
-          <p className="text-4xl font-bold text-aqua">
+          <p className="text-sand-600 text-sm">Total Monthly Savings</p>
+          <p className="text-aqua text-4xl font-bold">
             ${results.totalSavingsMonthly.toLocaleString()}
           </p>
         </div>
@@ -109,7 +156,7 @@ export function AuditResults({ results }: AuditResultsProps) {
       {/* Summary */}
       <Card variant="flat" className="bg-aqua-tint/30 border-aqua/10 mb-6">
         <CardContent className="p-6">
-          <p className="text-ink font-medium leading-relaxed">
+          <p className="text-ink leading-relaxed font-medium">
             {results.summary}
           </p>
         </CardContent>
@@ -141,43 +188,47 @@ export function AuditResults({ results }: AuditResultsProps) {
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                      <div className={`rounded-full p-2 ${s.bg} ${s.color} border ${s.border}`}>
+                      <div
+                        className={`rounded-full p-2 ${s.bg} ${s.color} border ${s.border}`}
+                      >
                         {s.icon}
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-ink">
-                            {rec.tool}
-                          </h3>
-                          <Badge variant={rec.status === "keep" ? "default" : "warning"}>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-ink font-semibold">{rec.tool}</h3>
+                          <Badge
+                            variant={
+                              rec.status === "keep" ? "default" : "warning"
+                            }
+                          >
                             {s.label}
                           </Badge>
                           {rec.confidence && (
-                            <span className="text-[10px] uppercase tracking-wider text-sand-600">
+                            <span className="text-sand-600 text-[10px] tracking-wider uppercase">
                               {rec.confidence} confidence
                             </span>
                           )}
                         </div>
-                        <p className="mt-1 text-sm text-sand-600 line-clamp-2">
+                        <p className="text-sand-600 mt-1 line-clamp-2 text-sm">
                           {rec.recommendedAction}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 text-right shrink-0">
+                    <div className="flex shrink-0 items-center gap-3 text-right">
                       {rec.savingsMonthly > 0 && (
                         <div>
-                          <p className="text-lg font-bold text-aqua">
+                          <p className="text-aqua text-lg font-bold">
                             ${rec.savingsMonthly.toLocaleString()}/mo
                           </p>
                           {rec.savingsPercent > 0 && (
-                            <p className="text-xs text-sand-600">
+                            <p className="text-sand-600 text-xs">
                               {rec.savingsPercent}% savings
                             </p>
                           )}
                         </div>
                       )}
                       <ChevronDown
-                        className={`h-5 w-5 text-sand-400 transition-transform ${
+                        className={`text-sand-400 h-5 w-5 transition-transform ${
                           isOpen ? "rotate-180" : ""
                         }`}
                       />
@@ -186,12 +237,12 @@ export function AuditResults({ results }: AuditResultsProps) {
 
                   {/* Expanded detail */}
                   {isOpen && (
-                    <div className="mt-4 border-t border-sand-200 pt-4">
-                      <p className="text-sm text-sand-600 leading-relaxed">
+                    <div className="border-sand-200 mt-4 border-t pt-4">
+                      <p className="text-sand-600 text-sm leading-relaxed">
                         {rec.reason}
                       </p>
                       {rec.savingsMonthly > 0 && (
-                        <div className="mt-3 flex items-center gap-2 text-sm font-medium text-aqua">
+                        <div className="text-aqua mt-3 flex items-center gap-2 text-sm font-medium">
                           <ArrowRight className="h-4 w-4" />
                           Saves ${rec.savingsMonthly.toLocaleString()}/mo
                         </div>

@@ -1,13 +1,10 @@
 "use server";
 
-import OpenAI from "openai";
+import axios from "axios";
 import { env } from "~/env";
 import type { ToolRecommendation } from "~/lib/auditEngine";
 
-const nimClient = new OpenAI({
-  apiKey: env.NVIDIA_NIM_API_KEY || "dummy",
-  baseURL: "https://integrate.api.nvidia.com/v1",
-});
+const NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 
 const FALLBACK_SUMMARY =
   "Based on your team size and tools, we found optimization opportunities that could save you money. Key recommendations include consolidating overlapping tools and optimizing plans to match your actual needs.";
@@ -47,29 +44,51 @@ ${recommendations
 Format the response as a single, highly readable paragraph or two. Keep it professional, actionable, and encouraging.`;
 
   try {
-    const response = await nimClient.chat.completions.create({
-      model: "qwen2-5",
-      max_tokens: 200,
-      temperature: 0.7,
+    const payload = {
+      model: "qwen/qwen3.5-122b-a10b",
       messages: [
-        {
-          role: "system",
-          content:
-            "You are an expert SaaS procurement and AI spend auditor. Your goal is to give a concise, actionable summary of tool expenses.",
-        },
         {
           role: "user",
           content: prompt,
         },
       ],
+      max_tokens: 200,
+      temperature: 0.6,
+      top_p: 0.95,
+      chat_template_kwargs: { enable_thinking: true },
+    };
+
+    console.log("📤 Sending request to NVIDIA NIM API:");
+    console.log("URL:", NVIDIA_API_URL);
+    console.log("Payload:", JSON.stringify(payload, null, 2));
+
+    const response = await axios.post(NVIDIA_API_URL, payload, {
+      headers: {
+        Authorization: `Bearer ${env.NVIDIA_NIM_API_KEY}`,
+        "Content-Type": "application/json",
+      },
     });
 
-    const summaryText =
-      response.choices[0]?.message?.content || FALLBACK_SUMMARY;
+    console.log("📥 Received response from NVIDIA NIM API:");
+    console.log("Status:", response.status);
+    console.log("Response data:", JSON.stringify(response.data, null, 2));
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const apiResponse: { choices?: Array<{ message?: { content?: string } }> } =
+      response.data;
+
+    const summaryText: string =
+      apiResponse?.choices?.[0]?.message?.content ?? FALLBACK_SUMMARY;
+
+    console.log("✅ Extracted summary:", summaryText);
 
     return { success: true, summary: summaryText };
   } catch (error) {
-    console.error("NVIDIA NIM API Error:", error);
+    console.error("❌ NVIDIA NIM API Error:", error);
+    if (axios.isAxiosError(error)) {
+      console.error("Status:", error.response?.status);
+      console.error("Response data:", error.response?.data);
+    }
     return { success: false, summary: FALLBACK_SUMMARY };
   }
 }

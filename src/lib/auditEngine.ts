@@ -15,7 +15,13 @@ export interface AuditConfiguration {
   useCase: string;
 }
 
-export type SuggestionFlag = "keep" | "downgrade" | "switch" | "cancel" | "optimize";
+export type SuggestionFlag =
+  | "keep"
+  | "downgrade"
+  | "switch"
+  | "cancel"
+  | "optimize"
+  | "upgrade";
 
 export interface ToolRecommendation {
   tool: string;
@@ -99,12 +105,15 @@ function findTool(toolName: string): ToolMatch | undefined {
  */
 function findPlan(
   toolData: ToolPricingData,
-  planName: string
+  planName: string,
 ): { key: string; data: PricingPlanData } | undefined {
   for (const key of Object.keys(toolData.plans)) {
     const plan = toolData.plans[key];
     if (!plan) continue;
-    if (key.toLowerCase() === planName.toLowerCase() || plan.name.toLowerCase() === planName.toLowerCase()) {
+    if (
+      key.toLowerCase() === planName.toLowerCase() ||
+      plan.name.toLowerCase() === planName.toLowerCase()
+    ) {
       return { key, data: plan };
     }
   }
@@ -123,9 +132,16 @@ function getMSRP(toolData: ToolPricingData, planKey: string): number {
  */
 function isEnterpriseTier(planName: string): boolean {
   const lower = planName.toLowerCase();
-  return ["enterprise", "business", "team", "ultra", "max", "pro-plus", "pro+", "premium"].some(
-    (tier) => lower.includes(tier)
-  );
+  return [
+    "enterprise",
+    "business",
+    "team",
+    "ultra",
+    "max",
+    "pro-plus",
+    "pro+",
+    "premium",
+  ].some((tier) => lower.includes(tier));
 }
 
 /**
@@ -133,13 +149,17 @@ function isEnterpriseTier(planName: string): boolean {
  */
 function isProTier(planName: string): boolean {
   const lower = planName.toLowerCase();
-  return ["pro", "plus", "ai-pro", "team-standard"].some((tier) => lower.includes(tier));
+  return ["pro", "plus", "ai-pro", "team-standard"].some((tier) =>
+    lower.includes(tier),
+  );
 }
 
 /**
  * Find the cheapest non-free plan for a given tool.
  */
-function findCheapestPaidPlan(toolData: ToolPricingData): { key: string; data: PricingPlanData } | undefined {
+function findCheapestPaidPlan(
+  toolData: ToolPricingData,
+): { key: string; data: PricingPlanData } | undefined {
   for (const [key, plan] of Object.entries(toolData.plans)) {
     if (plan.priceMonthly > 0) {
       return { key, data: plan };
@@ -151,7 +171,9 @@ function findCheapestPaidPlan(toolData: ToolPricingData): { key: string; data: P
 /**
  * Find the pro-tier plan (typically mid-tier) for a given tool.
  */
-function findProPlan(toolData: ToolPricingData): { key: string; data: PricingPlanData } | undefined {
+function findProPlan(
+  toolData: ToolPricingData,
+): { key: string; data: PricingPlanData } | undefined {
   let cheapest: { key: string; data: PricingPlanData } | undefined;
   for (const [key, plan] of Object.entries(toolData.plans)) {
     if (isProTier(key) && plan.priceMonthly > 0) {
@@ -178,7 +200,10 @@ function calcAnnualSavings(planData: PricingPlanData, seats: number): number {
 /**
  * Determine if there are similar/fungible tools in the stack.
  */
-function findSimilarTools(input: ToolInput[]): { pairs: string[][]; allSimilar: string[] } {
+function findSimilarTools(input: ToolInput[]): {
+  pairs: string[][];
+  allSimilar: string[];
+} {
   const pairs: string[][] = [];
   const allSimilar = new Set<string>();
 
@@ -191,7 +216,7 @@ function findSimilarTools(input: ToolInput[]): { pairs: string[][]; allSimilar: 
 
   for (const cat of categories) {
     const found = input.filter((t) =>
-      cat.some((c) => t.tool.toLowerCase().includes(c.toLowerCase()))
+      cat.some((c) => t.tool.toLowerCase().includes(c.toLowerCase())),
     );
     if (found.length > 1) {
       pairs.push(found.map((f) => f.tool));
@@ -217,7 +242,8 @@ export function runAuditEngine(input: AuditConfiguration): AuditResult {
     let status: SuggestionFlag = "keep";
     let recommendedAction = "Keep your current setup — pricing looks good.";
     let savingsMonthly = 0;
-    let reason = "Your pricing and plan are well-optimized for your team size and use case.";
+    let reason =
+      "Your pricing and plan are well-optimized for your team size and use case.";
     let confidence: "high" | "medium" | "low" = "high";
     let isDuplicate = false;
     let overlapWith: string | undefined = undefined;
@@ -273,7 +299,7 @@ export function runAuditEngine(input: AuditConfiguration): AuditResult {
         .find((tool) =>
           dupData.pairs
             .filter((pair) => pair.includes(t.tool))
-            .some((pair) => pair.includes(tool))
+            .some((pair) => pair.includes(tool)),
         );
     }
 
@@ -381,6 +407,58 @@ export function runAuditEngine(input: AuditConfiguration): AuditResult {
       reason = `Your primary use case is ${input.useCase}. Anthropic's Claude typically offers better pricing per token for writing workloads and excels at long-context content.`;
       confidence = "medium";
     }
+    // ─── Rule 8: Large team on basic tier should upgrade ───────────────────────
+    else if (
+      input.teamSize >= 10 &&
+      !isEnterpriseTier(t.plan) &&
+      !isProTier(t.plan) &&
+      toolData.type === "subscription"
+    ) {
+      const proPlan = findProPlan(toolData);
+      if (proPlan && proPlan.data.priceMonthly > 0) {
+        const proposed = proPlan.data.priceMonthly * t.seats;
+        if (proposed > t.monthlySpend) {
+          status = "upgrade";
+          recommendedAction = `Upgrade to ${proPlan.data.name} ($${proPlan.data.priceMonthly}/seat) — better for teams of ${input.teamSize}+.`;
+          reason = `With ${input.teamSize} team members, the ${proPlan.data.name} plan offers better value, improved team collaboration features, higher API limits, and priority support suitable for larger teams.`;
+          savingsMonthly = 0; // No direct cost savings, but improved value
+          confidence = "high";
+        }
+      }
+    }
+    // ─── Rule 9: Multiple low-tier tools of same vendor can consolidate ────────
+    else if (
+      input.tools.length >= 2 &&
+      !isEnterpriseTier(t.plan) &&
+      !isProTier(t.plan) &&
+      t.monthlySpend < 50
+    ) {
+      // Count how many of the same tool the team is using
+      const sameToolCount = input.tools.filter(
+        (tool) => tool.tool === t.tool,
+      ).length;
+
+      if (sameToolCount >= 2) {
+        const proPlan = findProPlan(toolData);
+
+        if (proPlan?.data) {
+          const currentTotalForTool = input.tools
+            .filter((tool) => tool.tool === t.tool)
+            .reduce((sum, tool) => sum + tool.monthlySpend, 0);
+
+          const upgradedCostPerSeat = proPlan.data.priceMonthly;
+          const upgradedTotal = upgradedCostPerSeat * t.seats;
+
+          if (upgradedTotal < currentTotalForTool * 1.3) {
+            status = "upgrade";
+            savingsMonthly = Math.max(0, currentTotalForTool - upgradedTotal);
+            recommendedAction = `Consolidate ${sameToolCount} basic ${t.tool} accounts into one ${proPlan.data.name} plan ($${upgradedCostPerSeat}/seat).`;
+            reason = `You're running ${sameToolCount} separate ${t.tool} subscriptions on the basic tier, costing $${currentTotalForTool}/mo combined. Upgrading to ${proPlan.data.name} consolidates into one account with better team management, higher limits, and potentially saves ~$${savingsMonthly}/mo.`;
+            confidence = "high";
+          }
+        }
+      }
+    }
 
     // ─── Aggregate ─────────────────────────────────────────────────────
     recommendations.push({
@@ -411,14 +489,19 @@ export function runAuditEngine(input: AuditConfiguration): AuditResult {
       expectedMSRP: msrp,
       isOverpaying,
       similarTools: dupData.allSimilar.filter(
-        (tool) => tool !== t.tool && dupData.pairs.some((pair) => pair.includes(t.tool) && pair.includes(tool))
+        (tool) =>
+          tool !== t.tool &&
+          dupData.pairs.some(
+            (pair) => pair.includes(t.tool) && pair.includes(tool),
+          ),
       ),
     });
   }
 
   // ─── Summary ─────────────────────────────────────────────────────────
   const totalSpend = input.tools.reduce((sum, t) => sum + t.monthlySpend, 0);
-  const savingsPercent = totalSpend > 0 ? Math.round((totalSavingsMonthly / totalSpend) * 100) : 0;
+  const savingsPercent =
+    totalSpend > 0 ? Math.round((totalSavingsMonthly / totalSpend) * 100) : 0;
 
   const summary =
     totalSavingsMonthly > 0
@@ -428,8 +511,8 @@ export function runAuditEngine(input: AuditConfiguration): AuditResult {
             : ""
         }`
       : totalSavingsYearly > 0
-      ? `Your plan selections are solid, but switching to annual billing could save ~$${totalSavingsYearly}/year.`
-      : "Your AI tool spending looks well-optimized — we didn't find any immediate savings opportunities.";
+        ? `Your plan selections are solid, but switching to annual billing could save ~$${totalSavingsYearly}/year.`
+        : "Your AI tool spending looks well-optimized — we didn't find any immediate savings opportunities.";
 
   return {
     recommendations,

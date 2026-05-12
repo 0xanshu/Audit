@@ -9,12 +9,14 @@ export interface FormState {
 
 interface AuditStore {
   formState: FormState;
+  isProcessing: boolean;
   setFormState: (state: Partial<FormState>) => void;
   setField: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
   setTools: (tools: FormState["tools"]) => void;
   removeTool: (index: number) => void;
   addTool: () => void;
   resetForm: () => void;
+  setIsProcessing: (processing: boolean) => void;
 }
 
 const initialState: FormState = {
@@ -27,6 +29,7 @@ export const useAuditStore = create<AuditStore>()(
   persist(
     (set) => ({
       formState: initialState,
+      isProcessing: false,
 
       setFormState: (partial) =>
         set((state) => ({
@@ -62,11 +65,13 @@ export const useAuditStore = create<AuditStore>()(
           },
         })),
 
-      resetForm: () => set({ formState: initialState }),
+      resetForm: () => set({ formState: initialState, isProcessing: false }),
+
+      setIsProcessing: (processing) => set({ isProcessing: processing }),
     }),
     {
       name: "audit-form-storage",
       storage: createJSONStorage(() => localStorage),
-    }
-  )
+    },
+  ),
 );
