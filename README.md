@@ -1,37 +1,79 @@
-# AuditsPro
+# Audit — AI Spend Optimizer
 
-**Stop Overspending on AI.**
+Audit analyzes your team's AI tool subscriptions and surfaces actionable savings: wrong plan tiers, duplicate tools, and overpaid seats — all in under 10 seconds, no login required.
 
-Welcome to AuditsPro! This platform is designed to help teams and enterprises analyze, optimize, and manage their monthly spend on AI tooling. With the rapid explosion of AI subscriptions—from ChatGPT and Claude to developer tools like Cursor and GitHub Copilot—it's incredibly easy to overpay for unused seats or redundant features.
+Built for engineering leads, CTOs, and finance teams at companies spending $500–$50k/month on AI tooling.
 
-AuditsPro gives you clarity, control, and immediate savings.
-
-## What exactly does AuditsPro do?
-
-AuditsPro serves as your automated, fractional CFO for AI subscriptions.
-
-1. **Input Your Stack:** Tell us what tools your team uses, the plan tier, your monthly spend, and your team size.
-2. **Instant Analysis:** Our proprietary Audit Engine checks your reported spend against actual retail pricing and detects feature redundancies.
-3. **Actionable Recommendations:** We generate a straightforward breakdown of your stack with specific actions:
-   - **Keep:** You're on the right plan and paying the correct amount.
-   - **Downgrade:** You are overpaying for unused seats or enterprise features you don't need.
-   - **Switch:** A cheaper, more effective alternative exists for your specific use-case (e.g., swapping OpenAI API for Anthropic API for pure writing tasks).
-4. **Track Savings:** Watch your bottom line improve via a unified, beautifully designed dashboard.
-
-## Key Features
-
-- **Smart Spend Engine:** Deep, built-in pricing intelligence for the top AI platforms (Cursor, Copilot, Claude, ChatGPT, Anthropic API, OpenAI API, Gemini, Windsurf).
-- **Interactive Dashboard:** A sleek, fully-rounded dark mode interface to track historical audits and monitor your total money saved.
-- **Secure Access:** Lightning-fast, secure authentication powered by GitHub.
-- **Shareable Reports:** Generate anonymized links to share your audit results with management to secure approval for budget changes, without exposing sensitive email or employee data.
-
-## Getting Started
-
-1. **Sign in:** Use your existing GitHub account to securely log in.
-2. **Launch an Audit:** From your dashboard, click **New Audit**.
-3. **Review:** See exactly where you are leaking money.
-4. **Apply Fixes:** Follow the exact steps to downgrade or switch your plans and immediately realize the savings.
+> **Live URL:** _Add your Vercel URL here_
+> **Demo recording:** _Add Loom/YouTube link here_
 
 ---
 
-_Take control of your AI stack._
+## Screenshots
+
+> _Add 3+ screenshots or a 30-second screen recording link here._
+> Suggested shots: landing page with form, audit results page, email gate CTA.
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 20+ / Bun
+- PostgreSQL (local or remote)
+- NVIDIA NIM API key (optional — app works without it via fallback)
+- GitHub OAuth app (for social login)
+
+### Install & Run Locally
+
+```bash
+# 1. Clone
+git clone <your-repo-url>
+cd audit
+
+# 2. Install dependencies
+bun install   # or npm install
+
+# 3. Configure environment
+cp .env.example .env
+# Fill in DATABASE_URL, AUTH_SECRET, AUTH_GITHUB_ID, AUTH_GITHUB_SECRET
+# Optionally add NVIDIA_NIM_API_KEY
+
+# 4. Set up the database
+npx prisma migrate dev
+
+# 5. Start dev server
+bun dev   # or npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+### Deploy to Vercel
+
+```bash
+# Push to GitHub, then connect repo in Vercel dashboard.
+# Set all env vars from .env in Vercel → Settings → Environment Variables.
+# Vercel auto-detects Next.js — no build config needed.
+```
+
+---
+
+## Decisions
+
+Five meaningful trade-offs made during the build:
+
+**1. No login required to run an audit**
+Gating the form behind auth kills conversion. The "show value first" model — run audit anonymously, then offer account creation to save the report — mirrors how Stripe and Linear onboard. Trade-off: anonymous audits can't be automatically linked to a user unless they register, so we added a `claimedByUserId` field and a post-register claim flow.
+
+**2. Rule-based audit engine over pure LLM**
+The core savings math is deterministic (pricing data × seats × rules). Using an LLM for the math would be slow, expensive, and non-auditable. The LLM is only used for the narrative summary — a task it's actually good at. Trade-off: the rule engine requires maintaining a pricing data file manually as vendors change plans.
+
+**3. Fire-and-forget AI summary with polling**
+The AI summary is generated asynchronously after the audit is saved. The user is redirected immediately to the results page, which polls every second via `router.refresh()` until the status flips to `completed`. Trade-off: slightly more complex than a synchronous call, but the UX is dramatically better — no 30-second loading spinner blocking the redirect.
+
+**4. JWT sessions over database sessions**
+JWT sessions mean the middleware can validate auth without a DB round-trip on every request, which matters for edge performance. Trade-off: tokens can't be revoked server-side without a blocklist. Acceptable for this use case since there's no sensitive financial data stored — only spend figures the user typed in.
+
+**5. NVIDIA NIM over OpenAI for the summary**
+NIM's `qwen3.5-122b` model is available on a generous free tier, making the app fully functional at zero AI cost during development and for low-volume production. Trade-off: the model is slower than GPT-4o-mini and the API has occasional cold-start latency, which is why the timeout is set to 45s and a fallback summary is always generated.

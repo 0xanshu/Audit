@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { ArrowRight, ShieldCheck, Zap, TrendingDown } from "lucide-react";
+import { ShieldCheck, Zap, TrendingDown } from "lucide-react";
 import { Navbar } from "~/components/navbar";
 import { AuditForm } from "~/app/_components/audit-form";
 

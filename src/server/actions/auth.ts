@@ -12,7 +12,7 @@ function isNextRedirect(error: unknown): boolean {
     typeof error === "object" &&
     error !== null &&
     "digest" in error &&
-    String((error as { digest: unknown }).digest).startsWith("NEXT_")
+    String(error.digest).startsWith("NEXT_")
   );
 }
 
