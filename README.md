@@ -1,19 +1,15 @@
-# Audit — AI Spend Optimizer
+# Audit - AI Spend Optimizer
 
 Audit is a free tool that analyzes your team's AI subscriptions and tells you where you're overspending. Wrong plan tiers, duplicate tools, unused seats — it catches all of it in under 10 seconds, no login needed.
 
 Built for eng leads and CTOs at startups spending $500–$50k/month on AI tooling.
 
-> **Live URL:** _Add your Vercel URL here_
-> **Demo recording:** _Add Loom/YouTube link here_
-
----
 
 ## Screenshots
 
-> _Add 3+ screenshots here: landing page, audit results, email capture._
+<img width="1919" height="967" alt="image" src="https://github.com/user-attachments/assets/c1516a48-9a0d-49c8-84ba-15b7a5172143" />
+<img width="1915" height="966" alt="image" src="https://github.com/user-attachments/assets/ec978f2f-41ae-45c3-8e27-57ff729dbbf4" />
 
----
 
 ## Quick Start
 
@@ -32,7 +28,6 @@ bun dev              # → http://localhost:3000
 
 Push to GitHub → connect in Vercel dashboard → set env vars → done. Vercel auto-detects Next.js.
 
----
 
 ## Decisions
 
