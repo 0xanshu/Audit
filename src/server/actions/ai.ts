@@ -86,7 +86,7 @@ Format the response as a single, highly readable paragraph or two. Keep it profe
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const payload = {
-        model: "qwen/qwen3.5-122b-a10b",
+        model: "meta/llama-3.1-8b-instruct",
         messages: [
           {
             role: "user",
@@ -96,7 +96,6 @@ Format the response as a single, highly readable paragraph or two. Keep it profe
         max_tokens: 1024,
         temperature: 0.6,
         top_p: 0.95,
-        chat_template_kwargs: { enable_thinking: false },
       };
 
       console.log(
