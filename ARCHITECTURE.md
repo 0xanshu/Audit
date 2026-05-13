@@ -1,15 +1,15 @@
 # Architecture
 
-## Stack Choice
+## Stack
 
-| Layer     | Choice                    | Why                                                                                                                       |
-| --------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Framework | Next.js 15 (App Router)   | Server actions eliminate a separate API layer. RSC handles auth checks at the page level without client-side waterfalls.  |
-| Database  | PostgreSQL + Prisma       | Structured relational data (users → audits → leads). Prisma's type-safe client catches schema mismatches at compile time. |
-| Auth      | NextAuth v5 (JWT)         | JWT sessions avoid a DB round-trip on every middleware check. Credentials + GitHub OAuth covers both user types.          |
-| AI        | NVIDIA NIM (qwen3.5-122b) | Free tier, sufficient quality for a 100-word summary. Swappable — the wrapper is provider-agnostic.                       |
-| Styling   | Tailwind CSS + shadcn/ui  | Utility-first keeps the bundle small. shadcn components are copy-owned, not a runtime dependency.                         |
-| State     | Zustand + localStorage    | Form state persists across reloads without a backend round-trip. Zustand's minimal API avoids Redux boilerplate.          |
+| Layer     | Choice                    | Why |
+| --------- | ------------------------- | --- |
+| Framework | Next.js 15 (App Router)   | Server actions replace a separate API layer. RSC handles auth at the page level. |
+| Database  | PostgreSQL + Prisma       | Relational data (users → audits → leads). Prisma catches schema drift at compile time. |
+| Auth      | NextAuth v5 (JWT)         | JWT avoids DB hits on every middleware check. Supports credentials + GitHub OAuth. |
+| AI        | NVIDIA NIM (qwen3.5-122b) | Free tier, good enough for ~100-word summaries. Provider-agnostic wrapper makes it swappable. |
+| Styling   | Tailwind CSS + shadcn/ui  | Utility-first, small bundle. shadcn is copy-owned, no runtime dep. |
+| State     | Zustand + localStorage    | Form state persists across reloads without a backend call. |
 
 ---
 
@@ -39,31 +39,26 @@ flowchart TD
     K -->|signIn + redirect| I
 ```
 
-### Narrative walkthrough
+**How it works:**
 
-1. The user fills the form on `/` — no login required.
-2. `createAuditAction` runs the deterministic audit engine synchronously (< 5ms), saves the result to Postgres with `status = "processing"`, then fires the AI summary generation as a background promise.
-3. The user is immediately redirected to `/audit/[id]`. The `AuditRefresh` component polls `router.refresh()` every second.
-4. When the AI summary finishes (or fails with a fallback), the DB row is updated to `status = "completed"`. The next poll renders the full report.
-5. Unauthenticated visitors see an `EmailGate` at the bottom. Submitting an email saves a `Lead` record. Clicking "Create Account" goes to `/register?claimAudit=[id]`, which claims the anonymous audit after registration.
+1. User fills the form on `/` — no login.
+2. `createAuditAction` runs the deterministic engine (<5ms), saves to Postgres with `status = "processing"`, fires AI summary as a background promise.
+3. User is redirected to `/audit/[id]`. `AuditRefresh` polls `router.refresh()` every second.
+4. AI summary finishes (or fails → fallback). DB row updates to `status = "completed"`. Next poll renders the full report.
+5. Unauthenticated visitors see `EmailGate`. Email → `Lead` record. "Create Account" → `/register?claimAudit=[id]` → claims the anonymous audit.
 
 ---
 
-## Handling 10k Audits/Day
+## Scaling to 10k Audits/Day
 
-The current architecture handles ~100 concurrent audits comfortably. At 10k/day (~7/minute average, with spikes to ~100/minute):
+Current setup handles ~100 concurrent audits. At 10k/day (~7/min average, spikes to ~100/min):
 
-**Bottleneck 1 — NVIDIA NIM API**
-Each audit fires one LLM call. At 100 concurrent requests, NIM will rate-limit. Fix: add a job queue (BullMQ + Redis). The server action enqueues the summary job and returns immediately. Workers process the queue at a controlled rate.
-
-**Bottleneck 2 — PostgreSQL connection pool**
-Serverless functions open a new connection per invocation. Fix: add PgBouncer (connection pooler) in front of Postgres, or switch `DATABASE_URL` to a pooled Prisma Accelerate URL.
-
-**Bottleneck 3 — `router.refresh()` polling**
-At scale, 1000 clients polling every second creates unnecessary load. Fix: replace polling with Server-Sent Events (SSE) or a WebSocket channel that pushes the `completed` event to the specific client.
-
-**Bottleneck 4 — Audit engine is CPU-bound**
-The rule engine is synchronous and runs in the Node.js event loop. At high concurrency this blocks other requests. Fix: move it to a Worker Thread or a dedicated microservice.
+| Bottleneck | Fix |
+| --- | --- |
+| NIM rate limits at 100 concurrent calls | Add BullMQ + Redis job queue. Workers process at controlled rate. |
+| Serverless DB connection exhaustion | PgBouncer or Prisma Accelerate pooled URL. |
+| 1000 clients polling every second | Replace polling with SSE or WebSocket push. |
+| Sync audit engine blocks event loop | Move to Worker Thread or separate microservice. |
 
 ```
 Current:  Browser → Next.js (monolith) → Postgres + NIM

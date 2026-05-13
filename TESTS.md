@@ -1,62 +1,25 @@
 # Tests
 
-## Running the Tests
+## How to Run
 
 ```bash
-# Run all tests once (CI mode)
-npx vitest run
-
-# Run in watch mode during development
-npx vitest
-
-# Run with coverage report
+npx vitest run          # all tests, CI mode
+npx vitest              # watch mode
 npx vitest run --coverage
 ```
 
 ## Test File
 
-`src/lib/auditEngine.test.ts`
+`src/lib/auditEngine.test.ts` — 5 test cases covering the audit engine (pure function, no external deps).
 
-## Test Cases
+| # | Test | Input | Expected |
+|---|------|-------|----------|
+| 1 | Overpaying vs MSRP | GitHub Copilot Business at $50/seat (MSRP $19), 5 seats | `status: "downgrade"`, `savingsMonthly > 0` |
+| 2 | Small team on enterprise tier | 3-person team on Cursor Business ($40/seat) | Downgrade to Pro ($20/seat), saves $60/mo |
+| 3 | Duplicate tool detection | ChatGPT Plus + Claude Pro in same stack | At least one `isDuplicate: true`, `status: "cancel"` or `"switch"` |
+| 4 | Annual billing opportunity | GitHub Copilot Individual at $10/mo monthly billing | `status: "optimize"`, mentions annual saves ~17% |
+| 5 | Wrong tool for use case | OpenAI API spend, `useCase: "Content Creation"` | `status: "switch"` to Anthropic API, `savingsMonthly > 0` |
 
-### 1. Overpaying vs MSRP
+## CI
 
-**Input:** Team reporting $50/seat for GitHub Copilot Business (MSRP: $19/seat), 5 seats
-**Expected:** `status: "downgrade"`, `savingsMonthly > 0`, reason mentions overpaying
-
-### 2. Small team on enterprise tier
-
-**Input:** 3-person team on Cursor Business ($40/seat), use case: "Software Engineering"
-**Expected:** `status: "downgrade"` to Cursor Pro ($20/seat), `savingsMonthly: 60`
-
-### 3. Duplicate tool detection
-
-**Input:** Both ChatGPT Plus and Claude Pro in the same stack
-**Expected:** At least one recommendation with `isDuplicate: true`, `status: "cancel"` or `"switch"`
-
-### 4. Annual billing opportunity
-
-**Input:** GitHub Copilot Individual at $10/month (monthly billing)
-**Expected:** `status: "optimize"`, recommendation mentions annual billing saves ~17%
-
-### 5. OpenAI API for writing tasks → switch to Anthropic
-
-**Input:** OpenAI API spend, `useCase: "Content Creation"`
-**Expected:** `status: "switch"`, `recommendedAction` mentions Anthropic API, `savingsMonthly > 0`
-
-## Coverage
-
-The audit engine is a pure function with no side effects or external dependencies, making it straightforward to test exhaustively.
-
-Target coverage: 80%+ on `src/lib/auditEngine.ts`
-
-## CI Integration
-
-Tests run automatically on every push via GitHub Actions (`.github/workflows/ci.yml`):
-
-```yaml
-- name: Run tests
-  run: npx vitest run
-```
-
-A failing test blocks the merge. The green check mark on the main branch confirms all 5 test cases pass.
+Tests run on every push via `.github/workflows/ci.yml`. Failing test blocks the merge.

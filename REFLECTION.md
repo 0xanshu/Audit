@@ -2,90 +2,69 @@
 
 ---
 
-## 1. The hardest bug you hit this week, and how you debugged it
+## 1. Hardest bug and how I debugged it
 
-The hardest bug was the `CredentialsSignin` error that made login and registration completely broken for about two hours.
+The auth system was completely broken for about two hours — every login attempt returned "Invalid credentials" even with the correct password on a freshly created account.
 
-The symptom was clear: every attempt to sign in with email/password returned a generic "Invalid credentials" error, even with a freshly created account and the correct password. The Prisma logs showed the `COMMIT` succeeding — the user was being created — but the subsequent `signIn("credentials", ...)` call was failing.
+First thing I checked was bcrypt. Added logging around `bcrypt.compare` — it returned `true`. So the `authorize` function was fine, the password was matching. Next I looked at the JWT callbacks in `authConfig`, those looked correct too.
 
-My first hypothesis was a bcrypt issue — maybe the hash was being double-hashed or the comparison was failing. I added logging around `bcrypt.compare` and confirmed it was returning `true`. So the `authorize` function was working correctly.
+Took another 30 minutes to find the real issue: I'd added a credentials provider stub to `authConfig` (to fix a separate JWT problem), which meant NextAuth had two providers with the same id `"credentials"`. It resolves providers by id and picks the first match — the stub with no `authorize` function. My real provider was never called.
 
-My second hypothesis was a session/JWT issue. I checked the `authConfig` callbacks and they looked fine.
+Fix was one line: remove the stub. JWT callbacks work based on `strategy: "jwt"` regardless of which providers are listed in the middleware config.
 
-The actual cause took another 30 minutes to find: when I added the credentials provider stub to `authConfig` (to fix a different JWT issue), NextAuth ended up with two providers both registered under the id `"credentials"`. NextAuth resolves providers by id and picks the first match — which was the stub with no `authorize` function. The real provider with the bcrypt logic was never called.
-
-The fix was a single line: remove the stub from `authConfig`. The JWT callbacks work based on `strategy: "jwt"` regardless of which providers are listed — they don't need the credentials provider to be present in the config that the middleware imports.
-
-What I learned: NextAuth's provider resolution is silent about duplicates. There's no warning when two providers share the same id. The only signal is the generic `CredentialsSignin` error, which points to the authorize function failing — but in this case the authorize function was never even reached.
+The frustrating part is NextAuth gives you zero warning about duplicate provider ids. The error just says `CredentialsSignin`, which makes you think `authorize` is failing — but it was never even reached.
 
 ---
 
-## 2. A decision you reversed mid-week, and what made you reverse it
+## 2. Decision I reversed mid-week
 
-I initially built the AI summary as a synchronous part of the server action — the action would call the NVIDIA NIM API, wait for the response, update the DB, and then redirect the user. This felt clean: one action, one result, one redirect.
+Originally built the AI summary as synchronous — the server action calls NIM, waits for the response, updates DB, then redirects. Clean and simple.
 
-I reversed this after the first real test. The NIM API with a large model takes 15–45 seconds. Keeping the user on a loading screen for 45 seconds before they even see the results page is a terrible experience. The form submit button would appear frozen.
+Reversed it after the first real test. NIM takes 15–45 seconds with a 122B model. The user stares at a frozen submit button for 45 seconds before seeing anything. Terrible UX.
 
-The reversal was to fire the AI call as a background promise (`void processAuditSummaryAsync(...)`) and redirect immediately. The results page starts with `status = "processing"` and polls every second via `router.refresh()`. When the AI finishes, the next poll shows the completed report.
+The fix: fire the AI call as a background promise, redirect immediately to the results page with `status = "processing"`, and poll via `router.refresh()` every second until it completes.
 
-This introduced a new problem: `revalidatePath` was being called from the background function after the server action had returned, which Next.js throws an error for ("revalidatePath during render"). The fix was to remove `revalidatePath` from the background function entirely and rely purely on the client-side polling — which is the correct pattern anyway.
+This broke `revalidatePath` — calling it from a background function after the server action has returned throws an error in Next.js. Removed it entirely and relied on the client-side polling instead, which is the correct pattern anyway.
 
-The trade-off is slightly more complexity (polling component, status field in the DB) for dramatically better UX. Worth it.
-
----
-
-## 3. What you would build in week 2 if you had it
-
-The most valuable thing to build in week 2 would be the email delivery layer and a proper lead nurture sequence.
-
-Right now, when someone submits their email in the `EmailGate`, we save a `Lead` record but send nothing. The user gets a "✓ Got it" confirmation and a link to create an account — but there's no email in their inbox, no audit link they can forward to their manager, no follow-up.
-
-Week 2 would add:
-
-- Resend integration to send a transactional email immediately after lead capture: "Here's your audit report: [link]. Your team could save $X/month."
-- A 3-email drip sequence (Day 1: report link, Day 3: "Did you implement any of these?", Day 7: "Book a 15-minute call with our team").
-- A simple admin view showing all leads, their audit savings amounts, and whether they've converted to accounts.
-- Rate limiting on audit creation (currently anyone can spam the endpoint).
-- Resend webhook to track email opens and clicks, feeding back into the lead score.
-
-The email layer is where the actual business value is — a saved report link that lands in someone's inbox is far more likely to be acted on than a browser tab they close.
+More complex (polling component, status field in DB), but the UX went from unusable to smooth.
 
 ---
 
-## 4. How you used AI tools
+## 3. What I'd build in week 2
 
-I used Kiro (Claude-based) as the primary coding assistant throughout the week.
+The email layer. Right now when someone submits their email in the EmailGate, we save a Lead record and show them "✓ Got it" — but nothing lands in their inbox. No audit link to forward to their manager, no follow-up.
 
-**What I used it for:**
+Week 2 priorities:
+- Resend integration: transactional email immediately after lead capture with the report link and savings amount
+- 3-email drip: Day 1 report, Day 3 "did you implement any changes?", Day 7 "book a call"
+- Simple admin view: all leads, their savings amounts, conversion status
+- Rate limiting on audit creation
+- Resend webhooks to track opens/clicks
 
-- Scaffolding boilerplate (Prisma schema, server actions, form components) — this saved roughly 3–4 hours of typing.
-- Debugging error messages by pasting the full stack trace and asking for the root cause.
-- Writing the first draft of documentation files (README, ARCHITECTURE).
-- Suggesting the `JSON.parse(JSON.stringify(...))` pattern for Prisma's `Json` field type issue.
-
-**What I didn't trust it with:**
-
-- The audit engine business logic. The rules (which plan tiers to flag, which tools overlap, what savings percentages are realistic) required judgment about the actual AI tools market. The AI would generate plausible-sounding rules that were factually wrong about pricing.
-- The NextAuth provider conflict bug. The AI's first suggestion was to add `trustHost: true` to the config, which was irrelevant. I had to trace through the NextAuth source code myself to understand provider id resolution.
-
-**One specific time the AI was wrong:**
-When I asked it to fix the `revalidatePath during render` error, it suggested wrapping the call in `setTimeout(() => revalidatePath(...), 0)`. This doesn't work — `revalidatePath` is not a browser API and the timing doesn't matter; the issue is the execution context, not the timing. The correct fix (remove it from the background function and rely on client polling) came from reading the Next.js error docs directly.
+A report link in someone's inbox is 10x more likely to be acted on than a browser tab they'll close.
 
 ---
 
-## 5. Self-rating on a 1–10 scale
+## 4. How I used AI tools
 
-**Discipline: 7/10**
-Worked consistently across all 7 days with no zero-hour days. Lost about half a day to the auth bug that could have been avoided by reading the NextAuth v5 migration docs more carefully before starting.
+Used Kiro (Claude-based) as my primary coding assistant.
 
-**Code quality: 7/10**
-The server actions are clean and well-typed. The audit engine is pure and testable. The main weakness is the frontend components — some have grown larger than they should and would benefit from being split. The `AuditForm` component in particular is doing too much.
+**Used it for:** Scaffolding boilerplate (Prisma schema, server actions, form components — saved 3–4 hours of typing), debugging by pasting stack traces, first drafts of docs, and the `JSON.parse(JSON.stringify(...))` workaround for Prisma's Json field.
 
-**Design sense: 6/10**
-The design is functional and consistent with the sand/aqua color system. It's not visually striking. The results page in particular could be more impactful — the savings number should be the hero of the page, not buried in a card.
+**Didn't trust it with:** The audit engine business logic — it generates plausible-sounding rules that are factually wrong about AI tool pricing. Also didn't trust it with the NextAuth provider bug. Its first suggestion was `trustHost: true`, which was completely irrelevant. I had to trace through NextAuth's source myself.
 
-**Problem solving: 8/10**
-Found the root cause of both major bugs (FK constraint, credentials provider conflict) by reading source code and error docs rather than guessing. The fire-and-forget + polling architecture was a good solution to the AI latency problem.
+**One time it was wrong:** Asked it to fix the "revalidatePath during render" error. It suggested `setTimeout(() => revalidatePath(...), 0)`. That doesn't work — `revalidatePath` isn't a browser API, the issue is execution context not timing. The real fix (remove it from the background function, use client polling) came from reading the Next.js error docs.
 
-**Entrepreneurial thinking: 7/10**
-The "show value first, ask for commitment later" flow is the right call for conversion. The audit claim flow (anonymous → register → claim) is a real product decision, not just a technical one. Could have gone further — the email drip sequence and the admin lead view are obvious next steps that would make this a real lead generation tool rather than a demo.
+---
+
+## 5. Self-rating
+
+**Discipline: 7/10** — Worked all 7 days, no zero-hour days. Lost half a day to the auth bug that I could've avoided by reading the NextAuth v5 migration docs first.
+
+**Code quality: 7/10** — Server actions and audit engine are clean and well-typed. Frontend components got a bit fat — `AuditForm` in particular needs splitting.
+
+**Design sense: 6/10** — Consistent color system, functional layout. Not visually striking. The savings number should be the hero of the results page, not buried in a card.
+
+**Problem solving: 8/10** — Found root causes of both major bugs by reading source code, not guessing. The async + polling architecture was a solid solution to the latency problem.
+
+**Entrepreneurial thinking: 7/10** — "Show value first" flow is the right call. Audit claim flow is a real product decision. Could've gone further with the email drip and admin lead view.

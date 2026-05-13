@@ -2,30 +2,34 @@
 
 ## North Star Metric
 
-**Total dollar volume of AI spend analyzed**
+**Total dollar volume of AI spend analyzed.**
 
-This metric captures both usage (audits run) and quality (users with real spend to analyze). A high volume of low-spend audits is less valuable than a smaller number of high-spend audits. Tracking total spend analyzed tells us whether we're reaching the right audience.
+Not DAU. Not "audits completed." Dollar volume captures both usage and audience quality — a smaller number of high-spend audits is worth more than thousands of $20/mo hobby stacks.
 
-Target: $1M in AI spend analyzed in the first 30 days post-launch.
+Target: $1M in spend analyzed within 30 days of launch.
 
 ---
 
-## 3 Tracking Inputs
+## 3 Input Metrics
 
-**1. Audit completion rate**
-Definition: % of visitors who reach the results page (i.e., submit the form).
-Why it matters: Measures form friction. If this drops below 40%, the form is too long or confusing.
-How to track: Server-side — count `Audit` rows created per day divided by unique visitors (from Vercel Analytics or Plausible).
-Target: ≥ 55%
+**1. Audit completion rate** — % of visitors who submit the form and reach the results page.
+- How: `Audit` rows / unique visitors (Vercel Analytics).
+- Target: ≥55%. Below 40% = form is too long or confusing.
 
-**2. Email capture rate**
-Definition: % of completed audits where the visitor submits their email in the `EmailGate`.
-Why it matters: This is the primary lead generation event. Low capture rate means the value proposition of "saving the report" isn't compelling enough, or the savings amount is too low to motivate action.
-How to track: Count `Lead` rows created per day divided by `Audit` rows with `status = "completed"`.
-Target: ≥ 15%
+**2. Email capture rate** — % of completed audits where the visitor submits email in EmailGate.
+- How: `Lead` rows / `Audit` rows with `status = "completed"`.
+- Target: ≥15%. Low rate = savings aren't compelling enough to motivate action.
 
-**3. Savings per audit (average)**
-Definition: Average `totalSavingsMonthly` across all completed audits.
-Why it matters: Tells us whether we're reaching companies with real overspend problems. If the average is below $100/month, we're either reaching very small teams or the audit engine rules are too conservative.
-How to track: `SELECT AVG(totalSavingsMonthly) FROM Audit WHERE status = 'completed'`
-Target: ≥ $400/month average savings identified
+**3. Average savings per audit** — mean `totalSavingsMonthly` across completed audits.
+- How: `SELECT AVG(totalSavingsMonthly) FROM Audit WHERE status = 'completed'`
+- Target: ≥$400/mo. Below $100 = reaching teams too small or engine rules too conservative.
+
+---
+
+## What I'd Instrument First
+
+Audit completion rate. It's the top of the funnel — everything else depends on people actually finishing the form.
+
+## Pivot Trigger
+
+If average savings per audit stays below $150/mo after 200+ audits, the tool isn't reaching companies with real overspend. At that point either the distribution is wrong (reaching hobbyists, not teams) or the engine needs more rules to surface savings in common stacks.

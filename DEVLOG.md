@@ -1,139 +1,64 @@
 # Dev Log
 
-One entry per day. Format: Hours worked, What I did, What I learned, Blockers, Plan for tomorrow.
-
 ---
 
 ## Day 1 — 2026-05-06
-
 **Hours worked:** 3
-
-**What I did:**
-Bootstrapped the project from the T3 stack scaffold. Set up the repo, configured TypeScript, Tailwind, and ESLint. Got the dev server running and verified the base Next.js app structure was clean.
-
-**What I learned:**
-T3's default scaffold includes tRPC wiring I didn't need — stripped it out early to keep the server action pattern clean.
-
-**Blockers / what I'm stuck on:**
-Nothing blocking. Just orientation and setup.
-
-**Plan for tomorrow:**
-Add shadcn/ui, define the Prisma schema with `Audit` and `Lead` models, push the initial migration.
+**What I did:** Bootstrapped from T3 stack. Set up repo, configured TS/Tailwind/ESLint. Stripped out tRPC since I'm using server actions instead.
+**What I learned:** T3 bundles tRPC by default — had to rip it out early to avoid confusion later.
+**Blockers / what I'm stuck on:** None, just getting oriented.
+**Plan for tomorrow:** Add shadcn/ui, define Prisma schema (Audit + Lead models), push first migration.
 
 ---
 
 ## Day 2 — 2026-05-07
-
 **Hours worked:** 5
-
-**What I did:**
-Added shadcn/ui and configured the component library. Defined the Prisma schema with `Audit` and `Lead` models, pushed the initial migration, and generated the client. Set up the database connection and verified Prisma Studio could read the empty tables.
-
-**What I learned:**
-Prisma's `Json` field type doesn't accept TypeScript typed objects directly — you have to go through `JSON.parse(JSON.stringify(...))` or cast via `unknown`. Spent time on a type error before finding this.
-
-**Blockers / what I'm stuck on:**
-The `Lead` model initially had `email` as globally unique, which would prevent the same person from submitting two different audits. Need to revisit the constraint.
-
-**Plan for tomorrow:**
-Build auth pages (login/register/NextAuth), the dashboard, pricing data, and the landing page with the audit form.
+**What I did:** Set up shadcn/ui. Wrote Prisma schema with Audit and Lead models, ran initial migration, verified tables in Prisma Studio.
+**What I learned:** Prisma's `Json` field won't accept typed TS objects directly — have to cast through `JSON.parse(JSON.stringify(...))`. Burned 30 min on a type error before finding this.
+**Blockers / what I'm stuck on:** Lead model had `email` as globally unique, which would block the same person from submitting multiple audits. Need to fix this.
+**Plan for tomorrow:** Auth pages, dashboard, pricing data, landing page with the audit form.
 
 ---
 
 ## Day 3 — 2026-05-08
-
 **Hours worked:** 8
-
-**What I did:**
-Set up NextAuth v5 with credentials provider (bcrypt) and GitHub OAuth. Built login and register pages. Built the dashboard showing historical audits with a stats bar. Added middleware to protect `/dashboard` while keeping `/` and `/audit/*` public. Built the landing page (`src/app/page.tsx`) with the hero, form embed, and feature highlights. Built `AuditForm` with `react-hook-form` + Zod, Zustand persistence, and auto-fill of monthly spend from the pricing data when tool + plan are selected. Added pricing data covering all 8 required tools with per-plan monthly prices and feature metadata.
-
-**What I learned:**
-NextAuth v5 with JWT strategy requires the credentials provider to only exist in `auth/index.ts`, not in `authConfig` (which is imported by the middleware). Having a stub credentials provider in `authConfig` causes NextAuth to register two providers with the same id — it picks the stub (no `authorize` function) and every sign-in fails with `CredentialsSignin`.
-
-`useFieldArray` from react-hook-form doesn't play well with `defaultValues` from Zustand on first render — the array initializes empty then hydrates, causing a flash. Fixed by reading from the store synchronously in `defaultValues`.
-
-**Blockers / what I'm stuck on:**
-The form's `datalist` for plan suggestions only works if the tool name matches exactly. Partial matches don't work in HTML datalist. Acceptable for now.
-
-**Plan for tomorrow:**
-Build the audit engine with all rules, write unit tests, wire up `createAuditAction`, and build the results page.
+**What I did:** Big day. Set up NextAuth v5 (credentials + GitHub OAuth), login/register pages, dashboard with historical audits. Built the landing page with hero + form. Built AuditForm with react-hook-form + Zod, Zustand persistence, and auto-fill of spend from pricing data when you pick a tool + plan. Added pricing for all 8 required tools.
+**What I learned:** NextAuth v5 with JWT: if you put a credentials provider stub in `authConfig` (middleware import), NextAuth registers two providers with id `"credentials"` and picks the stub — the real one never runs. Silent failure, painful debug. Also: `useFieldArray` hydrates async from Zustand, causing a flash on first render. Fixed by reading store sync in `defaultValues`.
+**Blockers / what I'm stuck on:** HTML `datalist` for plan suggestions only works on exact tool name match. Good enough for now.
+**Plan for tomorrow:** Audit engine + rules, unit tests, createAuditAction, results page.
 
 ---
 
 ## Day 4 — 2026-05-09
-
 **Hours worked:** 7
-
-**What I did:**
-Implemented the full audit engine with all 9 rules. Built `createAuditAction` — runs the engine, saves to DB, fires AI summary async, returns `auditId`. Built the `/audit/[id]` results page with `DetailedRecommendations`, AI summary card, financial impact card, and the `AuditRefresh` polling component.
-
-**What I learned:**
-`revalidatePath` cannot be called from an async background function that runs after the server action has returned — Next.js throws "revalidatePath during render". The polling approach (`router.refresh()` every 1s) is the correct pattern for fire-and-forget background jobs.
-
-**Blockers / what I'm stuck on:**
-The audit engine rule for "OpenAI API for writing tasks → switch to Anthropic" requires knowing the use case, which isn't in the per-tool input. Threaded `useCase` through the engine input type to fix it.
-
-**Plan for tomorrow:**
-Revisit the audit engine — update pricing data and add more optimisation logic. Then harden auth and fix UI issues.
+**What I did:** Built the full audit engine (9 rules). Wired up `createAuditAction` — runs engine, saves to DB, fires AI summary async, returns auditId. Built `/audit/[id]` results page with recommendation cards, AI summary, financial impact, and the AuditRefresh polling component.
+**What I learned:** `revalidatePath` can't be called from a background function after the server action has returned — Next.js throws "revalidatePath during render". Polling via `router.refresh()` is the right pattern for fire-and-forget jobs.
+**Blockers / what I'm stuck on:** The "OpenAI API for writing → switch to Anthropic" rule needed the use case, which wasn't in the per-tool input. Threaded `useCase` through the engine input type.
+**Plan for tomorrow:** Revisit engine, update pricing data, add more optimization logic.
 
 ---
 
 ## Day 5 — 2026-05-10
-
 **Hours worked:** 5
-
-**What I did:**
-Revisited the audit engine — updated pricing data for several tools and added more optimisation logic to improve recommendation accuracy. Ran the test suite to verify all 6 cases still pass after the changes.
-
-**What I learned:**
-Keeping pricing data in a separate typed file makes it easy to update rates without touching engine logic, but it also means any stale price silently produces wrong savings estimates. Worth adding a last-updated timestamp to each entry.
-
-**Blockers / what I'm stuck on:**
-Nothing blocking.
-
-**Plan for tomorrow:**
-Harden auth with rate limiting and input validation, fix remaining UI issues, write all documentation files.
+**What I did:** Updated pricing data for several tools, added more engine rules to improve recommendation accuracy. Re-ran test suite — all 6 cases pass.
+**What I learned:** Keeping pricing in a separate typed file is clean for updates but means stale prices silently produce wrong estimates. Should add a last-updated timestamp per entry.
+**Blockers / what I'm stuck on:** None.
+**Plan for tomorrow:** Harden auth, rate limiting, fix UI issues, write docs.
 
 ---
 
 ## Day 6 — 2026-05-11
-
 **Hours worked:** 7
-
-**What I did:**
-Hardened authentication: added rate limiting (5 attempts/minute per email) on login and register, tightened input validation, and fixed a security issue where the session could reference a deleted user. Built the `EmailGate` component on the results page for unauthenticated visitors. Fixed visual issues across the UI — `border-primary` / `border-aqua` Tailwind conflict on the loading spinner, color contrast on `text-zinc-400` placeholder text. Wrote `README.md`, `GTM.md`, `ECONOMICS.md`, `PRICING_DATA.md` and `ARCHITECTURE.md`.
-
-**What I learned:**
-Lighthouse flagged missing `alt` attributes on a few icons and insufficient color contrast on placeholder text. Small accessibility issues that are easy to miss during development but quick to fix once flagged.
-
-**Blockers / what I'm stuck on:**
-Nothing blocking.
-
-**Plan for tomorrow:**
-Add dynamic OG meta tags to the audit results page, deploy to Vercel, set environment variables, run Lighthouse on the live URL, submit.
+**What I did:** Added rate limiting on login/register (5 attempts/min per email). Fixed a security issue where stale sessions could reference deleted users. Built EmailGate component for unauthenticated visitors on results page. Fixed several UI issues — Tailwind border color conflicts, contrast on placeholder text. Wrote README, GTM, ECONOMICS, PRICING_DATA, ARCHITECTURE docs.
+**What I learned:** Lighthouse caught missing alt attributes and low contrast on placeholder text. Easy to miss during dev, quick to fix once flagged.
+**Blockers / what I'm stuck on:** None.
+**Plan for tomorrow:** OG meta tags, deploy to Vercel, Lighthouse on live URL, submit.
 
 ---
 
 ## Day 7 — 2026-05-12
-
 **Hours worked:** 8
-
-**What I did:**
-Added dynamic Open Graph meta tags to the audit results page (`generateMetadata`). Integrated NVIDIA NIM for the AI summary with a timeout, retry logic, and a context-aware fallback. Wrote 6 Vitest test cases covering: overpaying vs MSRP, small-team downgrade, duplicate tool detection, annual billing suggestion, the OpenAI→Anthropic switch rule, and a well-optimized baseline. All pass. Implemented the full audit claim flow: `claimAuditAction`, `claimedByUserId` field on the Audit model, register page reads `?claimAudit=` from the URL, `RegisterForm` passes it as a hidden field, `registerAction` claims the audit after user creation and redirects back to the audit page. Updated the dashboard query to include `OR claimedByUserId`. Fixed the broken `/dashboard/audit/[id]` links in `HistoricalAudits`. Ran `prisma migrate dev` for the schema changes. Fixed the `Lead` unique constraint from `email` alone to `(email, auditId)`. Tested the full flow end-to-end: form → redirect → polling → completed report. Migrated the database to Supabase. Deployed to Vercel, set all environment variables. Ran Lighthouse on the live URL — scores: Performance 88, Accessibility 92, Best Practices 95. Fixed a render-blocking font issue (moved font loading to `next/font`). Final pass on all documentation. Submitted the Google form with repo URL and live URL. Wrote `REFLECTION.md`, `METRICS.md`,`USER_INTERVIEWS.md` and `TESTS.md`.
-
-**What I learned:**
-Next.js `generateMetadata` runs as a separate RSC before the page renders, so it can safely do its own `db.audit.findUnique` call without affecting the page's data fetch. The two calls don't conflict.
-
-NVIDIA NIM's `qwen3.5-122b` with `enable_thinking: true` burns all 200 `max_tokens` on the internal `<think>` block and returns an empty answer. Fixed by disabling thinking and bumping `max_tokens` to 1024.
-
-Prisma's `updateMany` is safer than `update` for the claim operation because it silently no-ops if the audit is already claimed (no throw on zero rows updated), whereas `update` throws `P2025` if the record doesn't match the `where` clause.
-
-The `userId` FK constraint was failing for users with stale JWT tokens (DB was reset but token still had the old user id). Fixed with a `resolveUserId` helper that verifies the user exists before trusting the session.
-
-Vercel's edge network serves static assets from CDN automatically, but the Prisma client needs `DATABASE_URL` with a connection pooler URL (not the direct URL) to avoid connection limit errors under concurrent load. Added `DIRECT_URL` for migrations and `DATABASE_URL` for the pooled connection.
-
-**Blockers / what I'm stuck on:**
-Nothing blocking at submission time.
-
-**Plan for tomorrow:**
-Post-submission: add Resend email integration for the lead capture flow, add rate limiting on the audit creation endpoint.
+**What I did:** Added dynamic OG meta tags (`generateMetadata`). Integrated NVIDIA NIM for AI summary with timeout, retry, and fallback. Wrote 6 Vitest tests — all pass. Built full audit claim flow: register page reads `?claimAudit=` from URL, claims audit post-registration. Fixed Lead unique constraint to `(email, auditId)`. Migrated DB to Supabase. Deployed to Vercel. Lighthouse: Performance 88, Accessibility 92, Best Practices 95. Fixed render-blocking font issue with `next/font`. Final docs pass. Wrote REFLECTION, METRICS, USER_INTERVIEWS, TESTS. Submitted.
+**What I learned:** `generateMetadata` runs as a separate RSC before page render — its own `db.audit.findUnique` doesn't conflict with the page's fetch. NIM's `qwen3.5-122b` with `enable_thinking: true` burns all tokens on the `<think>` block and returns empty — fixed by disabling thinking and bumping `max_tokens` to 1024. Prisma `updateMany` is safer than `update` for the claim op (no-ops silently on zero matches vs throwing P2025). Vercel needs a pooled `DATABASE_URL` for Prisma under concurrent load — direct URL is for migrations only.
+**Blockers / what I'm stuck on:** None at submission time.
+**Plan for tomorrow:** Post-submission: Resend email integration, rate limiting on audit creation endpoint.
